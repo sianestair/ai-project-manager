@@ -1,0 +1,28 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${PLUGIN_ROOT}/hooks/project-context.mjs\"",
+            "commandWindows": "node \"${PLUGIN_ROOT}/hooks/project-context.mjs\"",
+            "statusMessage": "正在加载 AI 项目经理配置"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${PLUGIN_ROOT}/hooks/project-context.mjs\"",
+            "commandWindows": "node \"${PLUGIN_ROOT}/hooks/project-context.mjs\""
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "name": "project-manager",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "projectctl": "./runtime/cli/projectctl.mjs",
+    "changeplan": "./runtime/cli/changeplan.mjs",
+    "changeflow": "./runtime/cli/changeflow.mjs",
+    "validate-change-schema": "./runtime/cli/validate-schema.mjs"
+  },
+  "scripts": {
+    "projectctl": "node runtime/cli/projectctl.mjs",
+    "changeplan": "node runtime/cli/changeplan.mjs",
+    "changeflow": "node runtime/cli/changeflow.mjs",
+    "schema:validate": "node runtime/cli/validate-schema.mjs vowup-change --profile vowup",
+    "vowup:language": "node profiles/vowup/scripts/check-change-language.mjs",
+    "build:plugins": "node adapters/build-plugins.mjs",
+    "test": "node --test test/*.test.mjs",
+    "validate": "npm run schema:validate && npm test",
+    "build": "npm run build:plugins"
+  },
+  "devDependencies": {
+    "@fission-ai/openspec": "^1.4.1",
+    "yaml": "^2.8.2"
+  }
+}

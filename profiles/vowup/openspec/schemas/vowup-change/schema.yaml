@@ -1,0 +1,129 @@
+name: vowup-change
+version: 1
+description: VowUp change workflow using Chinese OpenSpec instructions with knowledge-base/project as current truth.
+artifacts:
+  - id: proposal
+    generates: proposal.md
+    description: 说明本次 change 为什么存在、要改变什么以及覆盖哪些范围。
+    template: proposal.md
+    instruction: |
+      创建 VowUp active change 的 proposal.md。
+
+      本工件必须使用中文撰写；代码名、命令、文件名、目录名、接口名、变量名、合约名、函数名和第三方技术术语可以保留英文。
+
+      proposal.md 应回答为什么需要本次变化、改变什么、哪些内容不在范围内，以及可能影响哪些当前项目真相。
+
+      保持简洁。不要在 proposal.md 中决定实现细节。
+    requires: []
+
+  - id: context
+    generates: context.md
+    description: 明确列出本次 change 消费的当前真相、外部参考、约束和冲突。
+    template: context.md
+    instruction: |
+      在编写 spec.md 或 design.md 前创建 context.md。
+
+      本工件必须使用中文撰写；代码名、命令、文件名、目录名、接口名、变量名、合约名、函数名和第三方技术术语可以保留英文。
+
+      读取 proposal.md 和仓库规则要求的相关文件。记录本次明确消费的 facts、rules、vocabulary、decisions 和 external references。
+
+      如果已存在 return-packets/knowledge-lens-review.md，必须记录该审查包路径、已采纳的外部可观察面结论、知识归属判断和仍需确认的问题。
+
+      context.md 用于防止 change 脱离背景编写。它是过程上下文，不是当前项目真相，因此可以记录尚未解决的冲突或问题。
+    requires:
+      - proposal
+
+  - id: spec
+    generates: spec.md
+    description: 定义本次 change 必须达成的未来事实和未来规则。
+    template: spec.md
+    instruction: |
+      创建定义目标状态的 spec.md。
+
+      本工件必须使用中文撰写；代码名、命令、文件名、目录名、接口名、变量名、合约名、函数名和第三方技术术语可以保留英文。
+
+      用可测试的语言定义未来事实和未来规则。相对于已消费的当前真相，说明新增、修改、废弃和边界。
+
+      不要包含实现任务、未选方案或把未来事实写成当前项目真相。
+    requires:
+      - proposal
+      - context
+
+  - id: design
+    generates: design.md
+    description: 定义满足 spec.md 的选定实现方案。
+    template: design.md
+    instruction: |
+      创建说明选定实现方案的 design.md。
+
+      本工件必须使用中文撰写；代码名、命令、文件名、目录名、接口名、变量名、合约名、函数名和第三方技术术语可以保留英文。
+
+      design.md 必须追溯到 spec.md 和 context.md。必要时包含模块边界、接口、数据/事件模型、安全关注点和取舍。
+
+      当 change 涉及业务模块、合约、Subgraph/query projection、App 验收面、生命周期、事件、权限或资金规则时，必须说明外部角色可观察、可触发、可查询、可验证或可依赖的行为；避免把内部实现结构写成外部承诺。
+
+      如果某个设计决策需要改变当前项目真相，必须说明该变化应在验收通过后进入 knowledge-delta.md。
+    requires:
+      - spec
+      - context
+
+  - id: acceptance
+    generates: acceptance.md
+    description: 定义如何按 spec.md 和重要设计约束验收本次 change。
+    template: acceptance.md
+    instruction: |
+      创建 acceptance.md。
+
+      本工件必须使用中文撰写；代码名、命令、文件名、目录名、接口名、变量名、合约名、函数名和第三方技术术语可以保留英文。
+
+      定义可以验证 spec.md 的具体检查项。已知命令级检查时写出命令；需要人工检查时写出人工检查项；暂时无法执行的检查必须明确说明原因。
+    requires:
+      - spec
+      - design
+
+  - id: knowledge-delta
+    generates: knowledge-delta.md
+    description: 定义验收通过后如何回写 knowledge-base/project。
+    template: knowledge-delta.md
+    instruction: |
+      创建 knowledge-delta.md。
+
+      本工件必须使用中文撰写；代码名、命令、文件名、目录名、接口名、变量名、合约名、函数名和第三方技术术语可以保留英文。
+
+      记录验收通过后应回写的精确当前真相更新。不要包含猜测内容或尚未验收的内容。
+
+      如果已存在 return-packets/knowledge-lens-review.md，必须说明哪些审查结论被采纳为验收后的项目真相，哪些被排除为实现细节、过程上下文、未来计划或未确认问题。
+    requires:
+      - spec
+      - acceptance
+
+  - id: tasks
+    generates: tasks.md
+    description: 基于已确认设计和验收需要定义有序实现任务清单。
+    template: tasks.md
+    instruction: |
+      创建 tasks.md。
+
+      本工件必须使用中文撰写；代码名、命令、文件名、目录名、接口名、变量名、合约名、函数名和第三方技术术语可以保留英文。
+
+      只使用 checkbox 任务。任务必须遵守 design.md，范围不得超出 spec.md，并包含 acceptance.md 中要求的验证工作。
+    requires:
+      - design
+      - acceptance
+
+apply:
+  requires:
+    - proposal
+    - context
+    - spec
+    - design
+    - acceptance
+    - knowledge-delta
+    - tasks
+  tracks: tasks.md
+  instruction: |
+    实现前读取 proposal.md、context.md、spec.md、design.md、acceptance.md、knowledge-delta.md 和 tasks.md。
+
+    按已确认的 design.md 和 tasks.md 实现。
+    使用 spec.md 和 acceptance.md 验证行为并发现设计偏差。
+    验收通过且 knowledge-delta.md 被应用前，不得把未来事实写入 knowledge-base/project/。

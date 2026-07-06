@@ -1,0 +1,22 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Generated plugin and build outputs
+plugins/
+dist/
+
+# Temporary build remnants
+*.tmp-*
+.project-manager.stale-*
+
+# Logs and local OS files
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+
+# Repository-local Codex marketplace source
+!.agents/
+!.agents/plugins/
+!.agents/plugins/marketplace.json

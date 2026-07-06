@@ -1,0 +1,4 @@
+interface:
+  display_name: "VowUp Contract Lead"
+  short_description: "负责 VowUp 合约领域判断、风险识别、任务拆分和验收建议"
+  default_prompt: "请 VowUp Contract Lead 分析这个合约 change。"

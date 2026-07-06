@@ -1,0 +1,4 @@
+﻿interface:
+  display_name: "VowUp Knowledge Lens Review"
+  short_description: "从外部可观察面和知识归属角度审查 VowUp 业务设计与知识库变更"
+  default_prompt: "请 VowUp Knowledge Lens Review 独立审查这个 change 的外部可观察面和知识归属。"

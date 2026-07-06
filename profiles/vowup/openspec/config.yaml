@@ -1,0 +1,59 @@
+schema: vowup-change
+
+context: |
+  VowUp 使用 OpenSpec 作为规划辅助工具，不作为项目真相来源。
+
+  当前项目真相位于 knowledge-base/project/。
+  VowUp active changes 位于 changes/active/。
+  VowUp archived changes 位于 changes/archived/。
+
+  Change 工件必须通过 project-manager 插件内的 wrapper 生成：
+  changeplan <command>
+
+  不得把 openspec/changes/ 或 openspec/specs/ 作为 VowUp 权威来源。
+
+  knowledge-base/project/ 只保存确定性当前真相：
+  Vocabulary 定义术语。
+  Facts 定义当前系统里有什么。
+  Rules 定义当前系统必须如何运行。
+  Decisions 定义当前有效决策及原因。
+
+  候选想法、开放问题、过程讨论、未来事实和未来规则属于 active changes，不属于 knowledge-base/project/。
+
+  当前旧实现代码不定义产品真相。
+  未来实现必须基于已确认 facts、rules、decisions 和 active change design/tasks。
+
+  C 端入口是移动端。
+  运营平台是 Web。
+
+  工程实现必须等 active change 具备已确认的 design.md 和 tasks.md 后才能开始。
+  spec.md 定义目标 facts/rules，acceptance.md 约束验收；实现主要遵循已确认的 design.md 和 tasks.md。
+
+  VowUp change 工件默认使用中文撰写；代码名、命令、文件名、目录名、接口名、变量名、合约名、函数名和第三方技术术语可以保留英文。
+
+rules:
+  proposal:
+    - 说明 change 为什么存在，以及它打算改变哪条基线。
+    - 不要写属于 design.md 的实现细节。
+    - 说明本 change 是否触及产品行为、业务规则、架构、UI、技术能力或验收口径。
+  context:
+    - 列出本 change 明确消费的 knowledge-base/project 文件。
+    - 区分继承的当前真相和计划变化。
+    - 显式标记冲突，不要静默选边。
+  spec:
+    - 只定义未来事实和未来规则。
+    - 不包含实现任务或候选方案。
+    - 清楚说明计划改变的当前项目真相。
+  design:
+    - 使用已确认 spec 和 context 作为约束。
+    - 说明选定实现方案和边界。
+    - 如果 design 与当前真相存在冲突，说明需要进入 knowledge-delta.md 的变化。
+  acceptance:
+    - 按 spec.md 和重要 design 约束验证行为。
+    - 包含具体检查；不能执行的检查必须说明原因。
+  knowledge-delta:
+    - 只描述验收通过后应回写的当前真相更新。
+    - 不要把未验收未来真相直接写入 knowledge-base/project/。
+  tasks:
+    - 任务必须可执行、有顺序，并足够小，适合 Agent 独立处理。
+    - 不要扩大到 design.md 之外的范围。
