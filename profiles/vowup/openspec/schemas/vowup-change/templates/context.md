@@ -34,6 +34,10 @@
 
 <!-- 如已运行 vowup-knowledge-lens-review，列出 return packet 路径、采纳的结论和仍需确认的问题。 -->
 
+## UI/UX 设计约束与验收面审查
+
+<!-- 如已运行 vowup-ui-ux-designer，列出 return-packets/ui-ux-design.md 路径、采纳的设计系统约束、页面模式、交互状态、验收证据要求和仍需确认的问题。 -->
+
 ## 冲突或缺口
 
 <!-- 记录本次 change 的冲突、缺失上下文或未解决问题。 -->

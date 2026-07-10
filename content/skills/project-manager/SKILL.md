@@ -108,6 +108,7 @@ node <project-manager-plugin-root>/bin/projectctl.mjs \
 - 大型变更的持续协调：`profiles/vowup/skills/vowup-change-lead/SKILL.md`。
 - 合约领域判断：`profiles/vowup/skills/vowup-contract-lead/SKILL.md`。
 - 外部可观察性与知识归属审查：`profiles/vowup/skills/vowup-knowledge-lens-review/SKILL.md`。
+- UI/UX 设计约束与验收面审查：`profiles/vowup/skills/vowup-ui-ux-designer/SKILL.md`。
 
 这些路径相对于已安装的 project-manager 插件根目录。按任务需要读取，不要一次加载全部内部资料。
 

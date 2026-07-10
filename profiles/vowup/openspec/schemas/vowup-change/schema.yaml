@@ -29,6 +29,8 @@ artifacts:
 
       如果已存在 return-packets/knowledge-lens-review.md，必须记录该审查包路径、已采纳的外部可观察面结论、知识归属判断和仍需确认的问题。
 
+      如果已存在 return-packets/ui-ux-design.md，必须记录该 UI/UX 审查包路径、已采纳的设计系统约束、页面模式、交互状态、验收证据要求和仍需确认的问题。
+
       context.md 用于防止 change 脱离背景编写。它是过程上下文，不是当前项目真相，因此可以记录尚未解决的冲突或问题。
     requires:
       - proposal
@@ -62,6 +64,8 @@ artifacts:
 
       当 change 涉及业务模块、合约、Subgraph/query projection、App 验收面、生命周期、事件、权限或资金规则时，必须说明外部角色可观察、可触发、可查询、可验证或可依赖的行为；避免把内部实现结构写成外部承诺。
 
+      当 change 涉及 Web Console、管理后台、钱包交互、交易反馈、合约验收台、表单、表格、Dashboard 或其他用户可见 UI 时，必须说明是否已采纳 return-packets/ui-ux-design.md，并定义用户任务、页面模式、Ant Design 组件约束、Design Tokens、交互状态、错误恢复和验证证据。
+
       如果某个设计决策需要改变当前项目真相，必须说明该变化应在验收通过后进入 knowledge-delta.md。
     requires:
       - spec
@@ -77,6 +81,8 @@ artifacts:
       本工件必须使用中文撰写；代码名、命令、文件名、目录名、接口名、变量名、合约名、函数名和第三方技术术语可以保留英文。
 
       定义可以验证 spec.md 的具体检查项。已知命令级检查时写出命令；需要人工检查时写出人工检查项；暂时无法执行的检查必须明确说明原因。
+
+      当 change 涉及用户可见 UI 或验收面时，必须包含 UI/UX 验收项：Storybook 状态覆盖、Playwright 桌面/移动截图、axe/WCAG 2.2 AA 可访问性检查、长文本/小屏幕/错误状态人工核验；如果某项工具暂不可用，必须说明替代证据。
     requires:
       - spec
       - design
@@ -107,6 +113,8 @@ artifacts:
       本工件必须使用中文撰写；代码名、命令、文件名、目录名、接口名、变量名、合约名、函数名和第三方技术术语可以保留英文。
 
       只使用 checkbox 任务。任务必须遵守 design.md，范围不得超出 spec.md，并包含 acceptance.md 中要求的验证工作。
+
+      当 change 涉及用户可见 UI 或验收面时，任务必须包含 UI/UX 设计约束落地、状态覆盖、截图或 Storybook/Playwright/axe 验证，以及采纳或排除 return-packets/ui-ux-design.md 结论的工作。
     requires:
       - design
       - acceptance

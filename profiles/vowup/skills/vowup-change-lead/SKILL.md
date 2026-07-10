@@ -42,6 +42,7 @@ Coordinate through existing project skills instead of replacing them:
 - Use `change-archive` only after acceptance and knowledge update are complete.
 - Use `vowup-contract-lead` whenever a change touches `engineering/contracts`, contract facts/rules, token flows, signatures, events, or contract acceptance.
 - Use `vowup-knowledge-lens-review` as an independent reviewer when a change creates or changes business modules, knowledge-base truth, externally observable behavior, acceptance surfaces, module boundaries, lifecycle states, events, query projections, permissions, or funds rules.
+- Use `vowup-ui-ux-designer` as an independent UI/UX designer or reviewer when a change creates or changes Web Console, admin, wallet, transaction, acceptance console, form, table, dashboard, page pattern, interaction state, accessibility, Storybook, Playwright screenshot, or visual design-system behavior.
 
 ## Dynamic Workflow Loop
 
@@ -107,12 +108,32 @@ changes/active/<change-id>/return-packets/knowledge-lens-review.md
 
 Review the packet before using it. If the packet changes product behavior, rules, acceptance standards, or project truth, ask the user before promoting the conclusion into `working-state.md`, planning artifacts, or `knowledge-base/project/`.
 
+## UI/UX Design Review
+
+Use `vowup-ui-ux-designer` before finalizing planning or accepting implementation when the change affects a user-facing app surface, Web Console, admin console, contract acceptance console, wallet interaction, transaction feedback, page pattern, form, table, dashboard, accessibility behavior, Storybook states, or Playwright visual baseline.
+
+Trigger it especially:
+
+- Between `context.md` and final `design.md` for new or changed UI surfaces.
+- Before `tasks.md` when implementation needs page pattern, component, token, or state coverage decisions.
+- Before `acceptance.md` is treated as complete for UI-heavy changes.
+- After implementation when screenshots, Storybook states, Playwright screenshots, axe output, or manual UI evidence must be reviewed.
+- When a contract or backend capability is technically complete but still lacks a human-operable acceptance surface.
+
+Prefer running it in an independent subagent/session. Require it to write:
+
+```text
+changes/active/<change-id>/return-packets/ui-ux-design.md
+```
+
+Review the packet before using it. If the packet changes product behavior, UI Design Contract rules, page pattern inventory, acceptance standards, screenshot baselines, or project truth, ask the user before promoting the conclusion into `working-state.md`, planning artifacts, frontend code, or `knowledge-base/project/`.
+
 ## Workflow
 
 1. Resolve the user intent into an active change goal. If no active change exists, create one through `change-plan`; if one exists, inspect it through `changeplan --project <target-project> status <change-id> --json`.
 2. For large or ambiguous changes, initialize or continue the dynamic workflow loop through `changeflow --project <target-project> next <change-id> --json`.
 3. Read root and area `AGENTS.md` files required by the change. Read `knowledge-base/project/` truth before treating any source implementation as meaningful.
-4. Classify affected domains: contracts, app, subgraph, knowledge, tooling, or mixed. Delegate domain analysis when a domain lead exists, and request Knowledge Lens Review when external observability or knowledge ownership is in scope.
+4. Classify affected domains: contracts, app, UI/UX, subgraph, knowledge, tooling, or mixed. Delegate domain analysis when a domain lead exists, request Knowledge Lens Review when external observability or knowledge ownership is in scope, and request UI/UX Design Review when a user-facing surface or acceptance surface is in scope.
 5. Drive planning artifacts to a coherent state: `proposal.md`, `context.md`, `spec.md`, `design.md`, `acceptance.md`, `knowledge-delta.md`, and `tasks.md`.
 6. Before implementation, verify that `design.md`, `tasks.md`, and confirmed `working-state.md` are present and not in conflict with `spec.md` or current truth.
 7. During implementation, keep tasks scoped to the change. If implementation reveals a planning gap, update the relevant change artifact or Segment before continuing.

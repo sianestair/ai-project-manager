@@ -1,0 +1,4 @@
+interface:
+  display_name: "VowUp UI/UX Designer"
+  short_description: "Design and review VowUp UI surfaces."
+  default_prompt: "Use $vowup-ui-ux-designer to design and review this VowUp UI surface against the UI Design Contract."
