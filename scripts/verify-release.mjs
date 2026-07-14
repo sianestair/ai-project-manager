@@ -1,0 +1,177 @@
+import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
+import { cp, mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { isBuiltin } from "node:module";
+import { tmpdir } from "node:os";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const workspaceRoot = dirname(fileURLToPath(new URL("../package.json", import.meta.url)));
+const distRoot = join(workspaceRoot, "dist");
+const temporaryRoot = await mkdtemp(join(tmpdir(), "pm-release-"));
+const nodeDirectory = dirname(process.execPath);
+const npmTool =
+  process.platform === "win32"
+    ? {
+        command: process.execPath,
+        prefix: [join(nodeDirectory, "node_modules", "npm", "bin", "npm-cli.js")],
+      }
+    : { command: "npm", prefix: [] };
+
+function run(command, args, cwd, environment = {}) {
+  const result = spawnSync(command, args, {
+    cwd,
+    encoding: "utf8",
+    windowsHide: true,
+    env: {
+      ...process.env,
+      ...environment,
+    },
+  });
+
+  if (result.status !== 0) {
+    throw new Error(
+      command + " " + args.join(" ") + " failed.\n" + result.stdout + "\n" + result.stderr,
+    );
+  }
+
+  return result;
+}
+
+async function collectFiles(root, directory = root) {
+  const entries = await readdir(directory, { withFileTypes: true });
+  const files = [];
+
+  for (const entry of entries.sort((left, right) => left.name.localeCompare(right.name))) {
+    const path = join(directory, entry.name);
+    if (entry.isDirectory()) {
+      files.push(...(await collectFiles(root, path)));
+    } else if (entry.isFile()) {
+      files.push(path.slice(root.length + 1).replaceAll("\\", "/"));
+    }
+  }
+
+  return files;
+}
+
+function runPm(releaseRoot, args, cwd = releaseRoot) {
+  return run(process.execPath, [join(releaseRoot, "bin", "pm.js"), ...args], cwd, {
+    NODE_PATH: "",
+    COREPACK_HOME: join(temporaryRoot, "empty-corepack"),
+  });
+}
+
+async function smokeRelease(releaseRoot, projectRoot) {
+  await mkdir(projectRoot, { recursive: true });
+
+  const version = runPm(releaseRoot, ["--version"]);
+  assert.equal(version.stdout.trim(), "0.1.0");
+  runPm(releaseRoot, ["init", "--project", projectRoot, "--project-id", "release-smoke"]);
+  runPm(releaseRoot, ["change", "start", "smoke-change", "--project", projectRoot]);
+  const status = runPm(releaseRoot, ["status", "smoke-change", "--project", projectRoot, "--json"]);
+  assert.equal(JSON.parse(status.stdout).change.phase, "requirements");
+  const validation = runPm(releaseRoot, [
+    "validate",
+    "smoke-change",
+    "--project",
+    projectRoot,
+    "--json",
+  ]);
+  assert.equal(JSON.parse(validation.stdout).valid, true);
+}
+
+try {
+  const releaseFiles = await collectFiles(distRoot);
+  for (const required of [
+    "package.json",
+    "bin/pm.js",
+    "core/manifest.yaml",
+    "core/schemas/project.schema.json",
+    "core/schemas/change.schema.json",
+  ]) {
+    assert.equal(releaseFiles.includes(required), true, "dist is missing " + required);
+  }
+
+  for (const forbidden of releaseFiles.filter(
+    (path) =>
+      path.endsWith(".ts") ||
+      path.endsWith(".d.ts") ||
+      path.endsWith(".map") ||
+      path.startsWith("tests/") ||
+      path.startsWith("docs/") ||
+      path.startsWith("node_modules/"),
+  )) {
+    assert.fail("dist contains forbidden file " + forbidden);
+  }
+
+  const releasePackage = JSON.parse(await readFile(join(distRoot, "package.json"), "utf8"));
+  assert.equal(releasePackage.name, "ai-project-manager");
+  assert.equal(releasePackage.version, "0.1.0");
+  assert.deepEqual(releasePackage.bin, { pm: "bin/pm.js" });
+  assert.equal("dependencies" in releasePackage, false);
+  assert.equal("devDependencies" in releasePackage, false);
+
+  const bundle = await readFile(join(distRoot, "bin", "pm.js"), "utf8");
+  assert.match(bundle, /^#!\/usr\/bin\/env node/u);
+  const externalSpecifiers = [
+    ...bundle.matchAll(/^import\s+[^\r\n]*?\sfrom\s+["']([^"']+)["'];?$/gmu),
+    ...bundle.matchAll(/^import\s+["']([^"']+)["'];?$/gmu),
+  ].map((match) => match[1]);
+  for (const specifier of externalSpecifiers) {
+    assert.equal(
+      isBuiltin(specifier),
+      true,
+      "bundle retains non-Node external import " + specifier,
+    );
+  }
+
+  const copiedRelease = join(temporaryRoot, "copied-release");
+  await cp(distRoot, copiedRelease, { recursive: true });
+  await smokeRelease(copiedRelease, join(temporaryRoot, "copied-project"));
+
+  const packed = run(
+    npmTool.command,
+    [...npmTool.prefix, "pack", "--json", "--pack-destination", temporaryRoot],
+    copiedRelease,
+  );
+  const packResult = JSON.parse(packed.stdout);
+  assert.equal(Array.isArray(packResult), true);
+  assert.equal(packResult.length, 1);
+  const packedFiles = packResult[0].files.map((entry) => entry.path).sort();
+  assert.deepEqual(packedFiles, releaseFiles);
+
+  const installRoot = join(temporaryRoot, "offline-install");
+  await mkdir(installRoot, { recursive: true });
+  await writeFile(
+    join(installRoot, "package.json"),
+    JSON.stringify(
+      {
+        name: "offline-release-smoke",
+        version: "1.0.0",
+        private: true,
+      },
+      null,
+      2,
+    ),
+    "utf8",
+  );
+  run(
+    npmTool.command,
+    [
+      ...npmTool.prefix,
+      "install",
+      "--offline",
+      "--ignore-scripts",
+      "--no-audit",
+      "--no-fund",
+      join(temporaryRoot, packResult[0].filename),
+    ],
+    installRoot,
+  );
+  const installedRoot = join(installRoot, "node_modules", "ai-project-manager");
+  assert.equal(runPm(installedRoot, ["--version"], installRoot).stdout.trim(), "0.1.0");
+
+  console.log("Self-contained dist and offline tarball verification passed.");
+} finally {
+  await rm(temporaryRoot, { recursive: true, force: true });
+}

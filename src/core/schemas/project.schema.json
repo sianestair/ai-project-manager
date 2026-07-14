@@ -1,0 +1,17 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://ai-project-manager.local/schemas/project.schema.json",
+  "title": "AI Project Manager project contract",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "project_id"],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "project_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$"
+    }
+  }
+}

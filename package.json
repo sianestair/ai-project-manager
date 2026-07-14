@@ -1,0 +1,29 @@
+{
+  "name": "ai-project-manager-workspace",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Development workspace for the portable, file-backed AI project manager.",
+  "type": "module",
+  "engines": {
+    "node": ">=24.11.0 <25"
+  },
+  "packageManager": "pnpm@11.13.0",
+  "scripts": {
+    "check": "vp check",
+    "test": "vp test",
+    "pack": "vp pack",
+    "verify:release": "node scripts/verify-release.mjs",
+    "verify": "vp check && vp pack && vp test && node scripts/verify-release.mjs"
+  },
+  "dependencies": {
+    "ajv": "^8.20.0",
+    "cac": "7.0.0",
+    "yaml": "^2.9.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.3",
+    "typescript": "7.0.2",
+    "vite": "npm:@voidzero-dev/vite-plus-core@0.2.4",
+    "vite-plus": "0.2.4"
+  }
+}

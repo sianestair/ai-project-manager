@@ -1,0 +1,17 @@
+schema_version: 1
+core:
+  id: ai-project-manager
+  version: 0.1.0
+runtime:
+  engine: node
+  engine_range: ">=24.11.0 <25"
+  language: typescript
+  module_format: esm
+  cli:
+    command: pm
+    entry: bin/pm.js
+schemas:
+  project: core/schemas/project.schema.json
+  change: core/schemas/change.schema.json
+skills: []
+adapters: []

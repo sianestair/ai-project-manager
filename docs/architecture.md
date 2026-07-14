@@ -1,7 +1,7 @@
 # AI 项目经理：第一版架构设计
 
 状态：第一版架构基线（已确认）
-阶段：实现规划
+阶段：实现
 最近修订：2026-07-13
 需求基线：[requirements.md](requirements.md)
 相关调研：[agent-support-research.md](agent-support-research.md)
@@ -674,30 +674,61 @@ Codex 适配器不得：
 - 让只有 Codex Hook 才能执行的检查成为归档的唯一保障。
 - 让子 Agent 输出直接成为权威结论；输出必须由 AI 项目经理吸收到标准 Change 材料。
 
-### 9.3 建议的实现源码布局
+### 9.3 已确认的实现源码与发布布局
 
 下面是 `my-workflow` 后续实现阶段的目标布局，不是受管理项目目录：
 
 ```text
-core/
-├─ manifest.yaml
-├─ schemas/
-│  ├─ project.schema.json
-│  └─ change.schema.json
-├─ skills/
-│  └─ ai-project-manager/
-│     └─ SKILL.md
-└─ runtime/
-   └─ ... Agent 无关 CLI
-adapters/
-└─ codex/
-   ├─ ... Plugin Manifest 与安装材料
-   └─ ... Codex 端到端测试
+src/
+├─ core/
+│  ├─ manifest.yaml
+│  ├─ schemas/
+│  │  ├─ project.schema.json
+│  │  └─ change.schema.json
+│  ├─ skills/
+│  │  └─ ai-project-manager/
+│  │     └─ SKILL.md
+│  └─ runtime/
+│     └─ cli/
+│        ├─ main.ts
+│        ├─ create-cli.ts
+│        ├─ options.ts
+│        ├─ commands/
+│        │  ├─ init/index.ts
+│        │  ├─ change/start/index.ts
+│        │  ├─ status/index.ts
+│        │  └─ validate/index.ts
+│        ├─ output.ts
+│        └─ errors.ts
+└─ adapters/
+   └─ codex/
+      ├─ ... Plugin Manifest 与安装材料
+      └─ ... Codex 端到端测试
 ```
 
 Claude Code 等后续适配器只能增加适配层，不能复制或修改一套独立核心语义。
 
-`core/manifest.yaml` 描述核心版本、Skill、schema、运行时入口和需要投影的公共资产。Codex Plugin manifest、命令入口和未来 Agent 适配材料由核心 manifest/schema 与各适配器模板生成，不手工复制流程正文。
+`src/core/manifest.yaml` 描述核心版本、Skill、schema、运行时入口和需要投影的公共资产。Codex Plugin manifest、命令入口和未来 Agent 适配材料由核心 manifest/schema 与各适配器模板生成，不手工复制流程正文。
+
+第一版采用 Vite+ 统一开发工具链：`src/` 是唯一源码与静态资产输入，`dist/` 是唯一完整发布单元。`dist/` 必须包含可直接由 Node 24 运行的 CLI bundle、核心 manifest/schema/Skill 和 Codex 适配器资产，不得在运行时回到仓库根、`src/` 或 `node_modules` 取文件。第三方运行依赖按 CLI 入口依赖图内联，Node 内置模块保持 external；第一版不发布 `.d.ts`、稳定 JS library API 或免 Node 的 standalone executable。
+
+CLI 边界使用 CAC 注册命令、解析 argv 和生成帮助。每个 `commands/<command>/index.ts` 只声明命令、收窄输入、调用既有 operation 并交给统一输出；CAC 类型和错误不得进入 project、materials、state 或 operations 模块，命令入口不得重新实现状态门或业务判断。
+
+```text
+dist/
+├─ package.json
+├─ bin/
+│  └─ pm.js
+├─ core/
+│  ├─ manifest.yaml
+│  ├─ schemas/
+│  └─ skills/
+└─ adapters/
+   └─ codex/
+      └─ ... 由核心资产与 Codex 模板生成的安装材料
+```
+
+Codex 适配器与核心共同发布在一个 `dist/` 中，但源码依赖方向不变：`src/adapters/codex/` 可以消费核心公共资产，`src/core/` 不得导入适配器。单一发布单元不把适配器变成第二套状态语义，也不把它定义为独立产品。
 
 ## 10. 第一版最小实现面
 
