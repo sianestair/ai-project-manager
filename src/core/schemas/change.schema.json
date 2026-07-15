@@ -72,12 +72,14 @@
           "properties": {
             "knowledge": {
               "type": "array",
+              "uniqueItems": true,
               "items": {
                 "$ref": "#/definitions/dependency"
               }
             },
             "engineering": {
               "type": "array",
+              "uniqueItems": true,
               "items": {
                 "$ref": "#/definitions/dependency"
               }
@@ -241,7 +243,14 @@
           "minimum": 1
         },
         "last_outcome": {
-          "$ref": "#/definitions/nullableString"
+          "oneOf": [
+            {
+              "enum": ["passed", "changes_requested"]
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       }
     },
@@ -464,8 +473,7 @@
           "minLength": 1
         },
         "blocked_by": {
-          "type": "string",
-          "minLength": 1
+          "enum": ["user", "ai_project_manager", "external", "external_system"]
         },
         "resume_when": {
           "type": "string",

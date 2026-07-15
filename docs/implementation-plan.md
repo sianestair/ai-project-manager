@@ -2,14 +2,14 @@
 
 状态：第一版实现计划（已确认）
 阶段：实现
-日期：2026-07-14
+日期：2026-07-15
 需求基线：[requirements.md](requirements.md)
 架构基线：[architecture.md](architecture.md)
 Agent 支持依据：[agent-support-research.md](agent-support-research.md)
 方法调研依据：[agentic-development-frameworks-research.md](agentic-development-frameworks-research.md)
 第一阶段目标平台：Codex
 
-实施进度：Slice 1（I-01～I-06）和 Slice 2（I-07～I-09）均已完成并验证；Vite+、`src/`、单一自包含 `dist/`、CAC 命令目录、确认材料 digest、readiness 新鲜度与 `pm confirm` 已形成可运行基线；下一切片为 blocker、回退与评审收敛。
+实施进度：Slice 1（I-01～I-06）、Slice 2（I-07～I-09）和 Slice 3（I-10～I-12）均已完成并验证；Vite+、`src/`、单一自包含 `dist/`、CAC 命令目录、确认材料 digest、readiness、blocker/review、`pm confirm`、`pm invalidate` 与依赖/checkpoint 恢复已形成可运行基线；下一切片为任务契约与四维验证。
 
 ## 1. 计划目标与不可变边界
 
@@ -145,6 +145,7 @@ src/
           status/index.ts
           validate/index.ts
           confirm/index.ts
+          invalidate/index.ts
       project/
         discover.ts
         init.ts
@@ -168,8 +169,10 @@ src/
         blockers.ts
         review.ts
         invalidation.ts
+        recovery.ts
       operations/
         confirm.ts
+        invalidate.ts
         validate.ts
         knowledge-preview.ts
         knowledge-apply.ts
@@ -440,6 +443,8 @@ pm init
 
 #### I-10 blocker 与 review loop 不变量
 
+**实施状态**：已完成并通过 blocker/status 联动、append-only review history、implementation revision、迭代上限和 `non_converging` 停机门测试。
+
 - **目标**：把 structured blocker、status 联动、review iteration/max 和 non_converging 停机实现为纯规则。
 - **Consumes**：blockers、status、review、implementation revisions、history。
 - **Produces**：合法/非法 diagnostics、resolve/review actions、non_converging blocked state。
@@ -450,6 +455,8 @@ pm init
 
 #### I-11 `pm invalidate` 与最早受影响阶段回退
 
+**实施状态**：已完成并通过 requirements/design/implementation/knowledge 依赖表、显式 reason、原子状态写入、上游门保留和 confirmation revision 追加测试。
+
 - **目标**：按明确输入的 requirements/design/implementation/acceptance/knowledge 影响层级，使对应及下游状态失效并保留追溯。
 - **Consumes**：stage、reason、当前门/readiness/implementation/knowledge 状态。
 - **Produces**：invalidated confirmation revision、stale readiness、回退 phase/next_action、history event。
@@ -459,6 +466,8 @@ pm init
 - **依据**：[requirements.md](requirements.md) 核心流程回退、R2、R4、R10；[architecture.md](architecture.md) §7、§11.4。
 
 #### I-12 中断恢复与依赖/检查点漂移
+
+**实施状态**：已完成并通过设计确认前、实施 checkpoint 后、已登记依赖漂移、未登记无关变更和多 active Change 拒绝猜测测试。
 
 - **目标**：让新的 CLI 进程只凭项目文件输出正确目标、确认、阶段、阻塞、偏差、恢复条件和下一动作。
 - **Consumes**：项目当前状态、active Change、base dependencies、implementation checkpoint、Git workspace。

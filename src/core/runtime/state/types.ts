@@ -13,6 +13,14 @@ export type MaterialSetName = "requirements" | "design" | "delivery" | "knowledg
 export type ReadinessStatus = "not_assessed" | "pass" | "concerns" | "fail" | "stale";
 export type GateName = "requirements" | "design" | "acceptance" | "knowledge";
 export type ConfirmationActor = "user" | "ai_project_manager";
+export type InvalidationStage =
+  | "requirements"
+  | "design"
+  | "implementation"
+  | "acceptance"
+  | "knowledge";
+export type BlockerOwner = "user" | "ai_project_manager" | "external" | "external_system";
+export type ReviewOutcome = "passed" | "changes_requested";
 
 export interface ProjectConfig {
   schema_version: 1;
@@ -65,7 +73,7 @@ export interface ReadinessRecord {
 
 export interface Blocker {
   reason: string;
-  blocked_by: string;
+  blocked_by: BlockerOwner;
   resume_when: string;
   affected_stage: Exclude<Phase, "archive_ready" | "archived">;
   created_at: string;
@@ -130,7 +138,7 @@ export interface ChangeState {
   review: {
     iteration: number;
     max_iterations: number;
-    last_outcome: string | null;
+    last_outcome: ReviewOutcome | null;
   };
   next_action: NextAction;
   history: HistoryEvent[];
@@ -180,6 +188,51 @@ export interface DesignPermissionFact extends SelfCheckFact {
   authority: ConfirmationActor | null;
 }
 
+export interface ResolvedReview {
+  iteration: number;
+  max_iterations: number;
+  last_outcome: ReviewOutcome | null;
+  at_limit: boolean;
+  non_converging: boolean;
+  can_continue: boolean;
+}
+
+export interface DependencyDriftFact {
+  kind: "knowledge" | "engineering";
+  path: string;
+  purpose: string;
+  expected_digest: string;
+  current_digest: string | null;
+  status: "current" | "changed" | "missing" | "invalid";
+}
+
+export interface WorkspaceChangeFact {
+  path: string;
+  status: string;
+  registered: boolean;
+}
+
+export interface RecoveryFacts {
+  current_goal: string;
+  inputs: string[];
+  confirmed_gates: GateName[];
+  requires_reassessment: boolean;
+  dependency_drift: DependencyDriftFact[];
+  checkpoint: {
+    recorded_scope_digest: string | null;
+    current_scope_digest: string | null;
+    recorded_at: string | null;
+    status: "not_recorded" | "fresh" | "stale" | "unavailable";
+  };
+  workspace: {
+    git_available: boolean;
+    base_revision: string | null;
+    current_revision: string | null;
+    changes: WorkspaceChangeFact[];
+  };
+  resume_conditions: string[];
+}
+
 export interface AvailableAction extends NextAction {
   id: string;
   description: string;
@@ -212,15 +265,14 @@ export interface ResolvedChangeState {
   self_checks: Record<GateName, SelfCheckFact>;
   design_permission: DesignPermissionFact;
   blockers: Blocker[];
-  review: ChangeState["review"];
+  open_blockers: Blocker[];
+  review: ResolvedReview;
+  implementation: ChangeState["implementation"];
   available_actions: AvailableAction[];
   blocked_actions: BlockedAction[];
   next_action: NextAction & {
     valid: boolean;
   };
-  recovery: {
-    current_goal: string;
-    inputs: string[];
-  };
+  recovery: RecoveryFacts;
   diagnostics: Diagnostic[];
 }

@@ -91,3 +91,38 @@ test("change schema rejects malformed readiness, blocker, and review state", asy
       error.details.length >= 3,
   );
 });
+
+test("change schema fixes blocker responsibility and review outcome enums", async () => {
+  const invalid = structuredClone(
+    createInitialChangeState({
+      changeId: "wallet-login",
+      title: "连接钱包登录",
+      capturedAt: "2026-07-15T00:00:00.000Z",
+      projectRevision: null,
+    }),
+  ) as unknown as Record<string, unknown>;
+
+  invalid.blockers = [
+    {
+      reason: "fixture",
+      blocked_by: "unknown-system",
+      resume_when: "Fixture condition.",
+      affected_stage: "implementation",
+      created_at: "2026-07-15T00:00:00.000Z",
+      status: "open",
+    },
+  ];
+  invalid.review = {
+    iteration: 1,
+    max_iterations: 3,
+    last_outcome: "arbitrary prose",
+  };
+
+  await assert.rejects(
+    validateChangeState(invalid),
+    (error: unknown) =>
+      error instanceof PmError &&
+      error.code === "change_schema_invalid" &&
+      error.details.length >= 2,
+  );
+});

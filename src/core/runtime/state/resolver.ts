@@ -6,9 +6,12 @@ import {
 } from "../project/discover.js";
 import { resolveMaterialSets } from "../materials/sets.js";
 import { resolveConfirmations } from "../governance/confirmations.js";
+import { resolveBlockers } from "../governance/blockers.js";
 import { resolveReadiness } from "../governance/readiness.js";
+import { resolveRecoveryFacts } from "../governance/recovery.js";
+import { resolveReview } from "../governance/review.js";
 import { resolveSelfChecks } from "../governance/self-checks.js";
-import type { Diagnostic, ResolvedChangeState } from "./types.js";
+import type { Diagnostic, GateName, ResolvedChangeState } from "./types.js";
 import { deriveActions, nextActionIsAvailable } from "./actions.js";
 import { validateStateInvariants } from "./invariants.js";
 
@@ -24,11 +27,24 @@ export async function resolveCanonicalState(input: {
   const confirmationResult = resolveConfirmations(state, materialResult.materials);
   const readinessResult = resolveReadiness(state.readiness, materialResult.materials);
   const selfCheckResult = await resolveSelfChecks(located.changeDirectory);
+  const blockerResult = resolveBlockers(state);
+  const reviewResult = resolveReview(state, blockerResult.openBlockers);
+  const confirmedGates = (Object.keys(confirmationResult.gates) as GateName[]).filter(
+    (gateName) => confirmationResult.gates[gateName].valid,
+  );
+  const recoveryResult = await resolveRecoveryFacts({
+    projectRoot,
+    state,
+    confirmedGates,
+  });
   const diagnostics: Diagnostic[] = [
     ...validateStateInvariants(state, located.changeId),
     ...materialResult.diagnostics,
     ...confirmationResult.diagnostics,
     ...readinessResult.diagnostics,
+    ...blockerResult.diagnostics,
+    ...reviewResult.diagnostics,
+    ...recoveryResult.diagnostics,
   ];
   const actions = deriveActions(
     state,
@@ -38,6 +54,9 @@ export async function resolveCanonicalState(input: {
       readiness: readinessResult.readiness,
       selfChecks: selfCheckResult.selfChecks,
       designPermission: selfCheckResult.designPermission,
+      openBlockers: blockerResult.openBlockers,
+      review: reviewResult.review,
+      recovery: recoveryResult.recovery,
     },
     diagnostics,
   );
@@ -70,8 +89,10 @@ export async function resolveCanonicalState(input: {
     readiness: readinessResult.readiness,
     self_checks: selfCheckResult.selfChecks,
     design_permission: selfCheckResult.designPermission,
-    blockers: state.blockers,
-    review: state.review,
+    blockers: blockerResult.blockers,
+    open_blockers: blockerResult.openBlockers,
+    review: reviewResult.review,
+    implementation: structuredClone(state.implementation),
     available_actions: actions.available,
     blocked_actions: actions.blocked,
     next_action: {
@@ -79,8 +100,12 @@ export async function resolveCanonicalState(input: {
       valid: nextActionValid,
     },
     recovery: {
-      current_goal: state.title,
+      ...recoveryResult.recovery,
       inputs: nextActionValid ? [...state.next_action.inputs] : [],
+      resume_conditions: [
+        ...recoveryResult.recovery.resume_conditions,
+        ...blockerResult.openBlockers.map((blocker) => blocker.resume_when),
+      ].filter((condition, index, values) => values.indexOf(condition) === index),
     },
     diagnostics,
   };

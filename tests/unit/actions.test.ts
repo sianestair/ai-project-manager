@@ -84,6 +84,33 @@ function actionContext(state: ChangeState): ActionContext {
       knowledge: fact("knowledge-update.md", "知识门前自检"),
     },
     designPermission: permissionFact(),
+    openBlockers: [],
+    review: {
+      ...state.review,
+      at_limit: false,
+      non_converging: false,
+      can_continue: true,
+    },
+    recovery: {
+      current_goal: state.title,
+      inputs: [],
+      confirmed_gates: [],
+      requires_reassessment: false,
+      dependency_drift: [],
+      checkpoint: {
+        recorded_scope_digest: null,
+        current_scope_digest: null,
+        recorded_at: null,
+        status: "not_recorded",
+      },
+      workspace: {
+        git_available: false,
+        base_revision: state.base.project_revision,
+        current_revision: null,
+        changes: [],
+      },
+      resume_conditions: [],
+    },
   };
 }
 
@@ -151,4 +178,69 @@ test("diagnostic errors suppress executable actions", () => {
 
   assert.deepEqual(result.available, []);
   assert.equal(nextActionIsAvailable(state.next_action, result.available), false);
+});
+
+test("an open blocker exposes resolution and applicable rollback instead of workflow progress", () => {
+  const state = createInitialChangeState({
+    changeId: "wallet-login",
+    title: "连接钱包登录",
+    capturedAt: "2026-07-15T00:00:00.000Z",
+    projectRevision: null,
+  });
+  state.phase = "implementation";
+  state.status = "blocked";
+  state.gates.requirements.status = "confirmed";
+  state.gates.design.status = "confirmed";
+  state.implementation.status = "in_progress";
+  state.implementation.baseline_revision = "baseline";
+  const context = actionContext(state);
+  context.openBlockers = [
+    {
+      reason: "non_converging",
+      blocked_by: "user",
+      resume_when: "The user decides whether to roll back.",
+      affected_stage: "implementation",
+      created_at: "2026-07-15T01:00:00.000Z",
+      status: "open",
+    },
+  ];
+
+  const result = deriveActions(state, context, []);
+  assert.deepEqual(
+    result.available.map((action) => action.id),
+    [
+      "resolve_blocker",
+      "invalidate_requirements",
+      "invalidate_design",
+      "invalidate_implementation",
+    ],
+  );
+  assert.equal(result.available[0]?.owner, "user");
+  assert.equal(
+    result.available.some((action) => action.id === "continue_implementation"),
+    false,
+  );
+});
+
+test("registered dependency drift requires reassessment before implementation continues", () => {
+  const state = createInitialChangeState({
+    changeId: "wallet-login",
+    title: "连接钱包登录",
+    capturedAt: "2026-07-15T00:00:00.000Z",
+    projectRevision: null,
+  });
+  state.phase = "implementation";
+  state.gates.requirements.status = "confirmed";
+  state.gates.design.status = "confirmed";
+  state.implementation.status = "in_progress";
+  state.implementation.baseline_revision = "baseline";
+  const context = actionContext(state);
+  context.recovery.requires_reassessment = true;
+
+  const result = deriveActions(state, context, []);
+  assert.equal(result.available[0]?.id, "reassess_dependency_drift");
+  assert.equal(
+    result.blocked.find((action) => action.id === "continue_implementation")?.reason,
+    "dependency_drift_pending_reassessment",
+  );
 });

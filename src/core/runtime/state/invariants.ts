@@ -122,36 +122,5 @@ export function validateStateInvariants(state: ChangeState, locatedChangeId: str
     );
   }
 
-  const openBlockers = state.blockers.filter((blocker) => blocker.status === "open");
-  if (openBlockers.length > 0 && state.status !== "blocked") {
-    diagnostics.push(
-      error(
-        "blocker_status_conflict",
-        "status",
-        "An unresolved blocker requires blocked Change status.",
-      ),
-    );
-  }
-
-  if (openBlockers.length === 0 && state.status === "blocked") {
-    diagnostics.push(
-      error(
-        "blocker_status_conflict",
-        "status",
-        "Blocked status requires at least one unresolved blocker.",
-      ),
-    );
-  }
-
-  if (state.review.iteration > state.review.max_iterations) {
-    diagnostics.push(
-      error(
-        "review_iteration_exceeded",
-        "review.iteration",
-        "Review iteration cannot exceed max_iterations.",
-      ),
-    );
-  }
-
   return diagnostics;
 }

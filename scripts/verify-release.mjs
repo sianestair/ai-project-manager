@@ -104,6 +104,27 @@ async function smokeRelease(releaseRoot, projectRoot) {
   const status = runPm(releaseRoot, ["status", "smoke-change", "--project", projectRoot, "--json"]);
   assert.equal(JSON.parse(status.stdout).change.phase, "design");
   assert.equal(JSON.parse(status.stdout).gates.requirements.valid, true);
+  const invalidation = runPm(releaseRoot, [
+    "invalidate",
+    "requirements",
+    "smoke-change",
+    "--reason",
+    "Release smoke rollback.",
+    "--project",
+    projectRoot,
+    "--json",
+  ]);
+  assert.equal(JSON.parse(invalidation.stdout).nextAction, "revise_requirements");
+
+  const rolledBack = runPm(releaseRoot, [
+    "status",
+    "smoke-change",
+    "--project",
+    projectRoot,
+    "--json",
+  ]);
+  assert.equal(JSON.parse(rolledBack.stdout).change.phase, "requirements");
+  assert.equal(JSON.parse(rolledBack.stdout).gates.requirements.valid, false);
   const validation = runPm(releaseRoot, [
     "validate",
     "smoke-change",

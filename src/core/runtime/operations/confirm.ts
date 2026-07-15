@@ -163,6 +163,9 @@ export async function confirmChange(
       readiness: readinessResult.readiness,
       selfChecks: resolved.self_checks,
       designPermission: resolved.design_permission,
+      openBlockers: resolved.open_blockers,
+      review: resolved.review,
+      recovery: resolved.recovery,
     },
     predictedDiagnostics,
   );

@@ -536,6 +536,8 @@ flowchart LR
 
 `implementation.baseline_revision` 在实际实施开始时记录，`final_revision` 在验证完成时记录；二者与交付证据共同界定本次 Change 的工程范围。
 
+第一版将 `blocked_by` 固定为 `user`、`ai_project_manager`、`external` 或 `external_system`，将 `review.last_outcome` 固定为 `passed`、`changes_requested` 或 `null`。当 `last_outcome: changes_requested` 且 `iteration` 达到 `max_iterations` 时，必须存在一个未解决的 `non_converging` blocker；此时 resolver 只允许处理 blocker 或显式回退，不再给出继续自动修补或评审动作。每次 changes-requested 回环追加 `review_changes_requested` history event，不能用更新计数替代旧记录。
+
 ### 5.3 确认动作
 
 用户不需要直接编辑 YAML 或运行命令。请求任何用户确认前，AI 项目经理必须先执行与该门对应的自检：
@@ -630,6 +632,8 @@ flowchart LR
 4. 不删除已有代码和证据；先判断哪些仍可复用。
 5. 重新确认后产生新的 `revision` 和摘要，不能覆盖旧确认记录。
 
+`pm invalidate <stage> <id> --reason <reason>` 只执行调用者明确指定的影响层级，不自行判断“最早受影响阶段”。requirements 回退失效全部下游；design 回退保留需求确认；implementation 回退保留需求、设计和 readiness；acceptance/knowledge 回退分别保留已经验证或验收的上游事实。命令保留材料、代码、confirmation 数组和 history，只清理当前下游有效性指针；已经原子应用或验证的项目知识不能通过 invalidate 隐藏。
+
 ## 8. 中断恢复模型
 
 新会话恢复 active Change 时，AI 项目经理按固定顺序执行：
@@ -644,6 +648,8 @@ flowchart LR
 8. 从下一步继续，不要求恢复完整聊天历史。
 
 如果已登记依赖或实施检查点发生变化，恢复检查必须报告具体路径和差异。能证明不影响当前基线时更新依赖记录；可能影响需求、设计或实现时，按回退策略处理。未登记范围的变化作为辅助工作区信息报告，不因无关变化自动阻塞当前 Change。
+
+第一版的知识依赖必须位于 `knowledge-base/`，工程依赖必须位于 `engineering/`。依赖可以登记文件或目录；目录摘要使用 Git tracked 加 untracked-but-not-ignored 文件清单，无 Git 时使用排除 VCS 元数据、依赖缓存和事务临时目录的安全遍历。checkpoint 的 `current_scope_digest` 由当前已登记工程依赖的 `path + current digest` 清单确定性计算。依赖或 checkpoint 漂移只派生 `reassess_dependency_drift` 和精确恢复条件，不替 AI 判断实际影响；Git 工作区中未登记范围的变化标为 information，不取消原本可执行动作。
 
 ## 9. 可移植核心与 Codex 适配器边界
 
@@ -700,16 +706,22 @@ src/
 │     │  │  ├─ init/index.ts
 │     │  │  ├─ change/start/index.ts
 │     │  │  ├─ confirm/index.ts
+│     │  │  ├─ invalidate/index.ts
 │     │  │  ├─ status/index.ts
 │     │  │  └─ validate/index.ts
 │     │  ├─ output.ts
 │     │  └─ errors.ts
 │     ├─ governance/
+│     │  ├─ blockers.ts
 │     │  ├─ confirmations.ts
+│     │  ├─ invalidation.ts
 │     │  ├─ readiness.ts
+│     │  ├─ recovery.ts
+│     │  ├─ review.ts
 │     │  └─ self-checks.ts
 │     └─ operations/
-│        └─ confirm.ts
+│        ├─ confirm.ts
+│        └─ invalidate.ts
 └─ adapters/
    └─ codex/
       ├─ ... Plugin Manifest 与安装材料
@@ -785,7 +797,7 @@ Codex 适配器只增加一个安装入口，不复制第二份 Skill 正文。
 | `pm status [id]` | 通过 canonical resolver 输出恢复摘要、available actions、blocked actions 和推荐下一动作 |
 | `pm validate [id]` | 校验 schema、材料摘要、阶段、门、readiness、blocker、评审状态和下一动作一致性 |
 | `pm confirm <gate> <id>` | 在已有明确确认且门前自检满足后，将材料摘要绑定到门记录 |
-| `pm invalidate <stage> <id>` | 保留历史并使受影响阶段及下游门失效 |
+| `pm invalidate <stage> <id> --reason <reason>` | 保留历史并使调用者明确指定的受影响阶段及下游门失效 |
 | `pm knowledge preview/apply <id>` | 生成或原子应用 `knowledge.patch`，并校验候选、补丁及目标 before/after digest |
 | `pm archive check/apply <id>` | 使用同一 resolver 检查终态门并原样移动 Change 目录 |
 

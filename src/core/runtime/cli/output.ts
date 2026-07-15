@@ -13,7 +13,10 @@ export function renderStatus(state: ResolvedChangeState): string {
         (gate.invalid_reason === null ? "" : " (" + gate.invalid_reason + ")") +
         (gate.current_confirmation === null
           ? ""
-          : " revision " + String(gate.current_confirmation.revision))
+          : " revision " +
+            String(gate.current_confirmation.revision) +
+            " — " +
+            gate.current_confirmation.summary)
       );
     },
   );
@@ -32,6 +35,15 @@ export function renderStatus(state: ResolvedChangeState): string {
       String(state.readiness.ready) +
       ")",
     "Design confirmation authority: " + (state.design_permission.authority ?? "not_classified"),
+    "Review: " +
+      String(state.review.iteration) +
+      "/" +
+      String(state.review.max_iterations) +
+      (state.review.non_converging ? " (non_converging)" : ""),
+    "Implementation revisions: " +
+      (state.implementation.baseline_revision ?? "not_started") +
+      " -> " +
+      (state.implementation.final_revision ?? "not_verified"),
     "",
     "Gates:",
     ...gateLines,
@@ -45,6 +57,63 @@ export function renderStatus(state: ResolvedChangeState): string {
     for (const action of state.available_actions) {
       lines.push("- " + action.id + " [" + action.owner + "]: " + action.description);
     }
+  }
+
+  lines.push("", "Open blockers:");
+  if (state.open_blockers.length === 0) {
+    lines.push("- none");
+  } else {
+    for (const blocker of state.open_blockers) {
+      lines.push(
+        "- " +
+          blocker.reason +
+          " [" +
+          blocker.blocked_by +
+          "] at " +
+          blocker.affected_stage +
+          " (resume: " +
+          blocker.resume_when +
+          ")",
+      );
+    }
+  }
+
+  lines.push("", "Recovery:");
+  lines.push("- confirmed gates: " + (state.recovery.confirmed_gates.join(", ") || "none"));
+  lines.push("- inputs: " + (state.recovery.inputs.join(", ") || "none"));
+  lines.push("- dependency reassessment: " + String(state.recovery.requires_reassessment));
+  lines.push(
+    "- Git: " +
+      (state.recovery.workspace.git_available ? "available" : "unavailable") +
+      " at " +
+      (state.recovery.workspace.current_revision ?? "no revision"),
+  );
+  lines.push(
+    "- checkpoint: " +
+      state.recovery.checkpoint.status +
+      " (current: " +
+      (state.recovery.checkpoint.current_scope_digest ?? "unavailable") +
+      ")",
+  );
+  const changedDependencies = state.recovery.dependency_drift.filter(
+    (dependency) => dependency.status !== "current",
+  );
+  for (const dependency of changedDependencies) {
+    lines.push(
+      "- " + dependency.kind + " dependency " + dependency.path + ": " + dependency.status,
+    );
+  }
+  for (const change of state.recovery.workspace.changes) {
+    lines.push(
+      "- workspace " +
+        change.status.trim() +
+        " " +
+        change.path +
+        (change.registered ? " [registered]" : " [unregistered]"),
+    );
+  }
+  for (const condition of state.recovery.resume_conditions) {
+    lines.push("- resume when: " + condition);
   }
 
   lines.push("", "Blocked actions:");
@@ -87,6 +156,8 @@ export function renderValidation(state: ResolvedChangeState): string {
     result.valid ? "VALID" : "INVALID",
     "Change: " + state.change.change_id,
     "Readiness: " + state.readiness.status,
+    "Review: " + String(state.review.iteration) + "/" + String(state.review.max_iterations),
+    "Dependency reassessment: " + String(state.recovery.requires_reassessment),
     "Errors: " + String(result.error_count),
     "Warnings: " + String(result.warning_count),
   ];
