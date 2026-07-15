@@ -88,7 +88,8 @@ export function designReadmeTemplate(title: string): string {
     "",
     "## 权限分类",
     "",
-    "待区分重大决定与局部、可逆实现决定。",
+    "- 确认责任：待分类",
+    "- 理由：待记录。",
     "",
     "## 材料清单",
     "",
@@ -127,6 +128,10 @@ export function deliveryReadmeTemplate(title: string): string {
     "",
     "- `delivery/README.md`",
     "",
+    "## 验收门前自检",
+    "",
+    "待执行。",
+    "",
   ].join("\n");
 }
 
@@ -143,6 +148,10 @@ export function knowledgeUpdateTemplate(title: string): string {
     "## 用户处理结果",
     "",
     "待确认。",
+    "",
+    "## 知识门前自检",
+    "",
+    "待执行。",
     "",
   ].join("\n");
 }

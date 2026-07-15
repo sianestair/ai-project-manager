@@ -2,6 +2,21 @@ import type { ResolvedChangeState } from "../state/types.js";
 import { validationResult } from "../operations/validate.js";
 
 export function renderStatus(state: ResolvedChangeState): string {
+  const gateLines = (["requirements", "design", "acceptance", "knowledge"] as const).map(
+    (gateName) => {
+      const gate = state.gates[gateName];
+      return (
+        "- " +
+        gateName +
+        ": " +
+        gate.status +
+        (gate.invalid_reason === null ? "" : " (" + gate.invalid_reason + ")") +
+        (gate.current_confirmation === null
+          ? ""
+          : " revision " + String(gate.current_confirmation.revision))
+      );
+    },
+  );
   const lines = [
     "Project: " + state.project.project_id,
     "Root: " + state.project.root,
@@ -9,6 +24,17 @@ export function renderStatus(state: ResolvedChangeState): string {
     "Phase: " + state.change.phase,
     "Status: " + state.change.status,
     "Current goal: " + state.recovery.current_goal,
+    "Readiness: " +
+      state.readiness.status +
+      " (fresh: " +
+      String(state.readiness.fresh) +
+      ", ready: " +
+      String(state.readiness.ready) +
+      ")",
+    "Design confirmation authority: " + (state.design_permission.authority ?? "not_classified"),
+    "",
+    "Gates:",
+    ...gateLines,
     "",
     "Available actions:",
   ];
@@ -60,6 +86,7 @@ export function renderValidation(state: ResolvedChangeState): string {
   const lines = [
     result.valid ? "VALID" : "INVALID",
     "Change: " + state.change.change_id,
+    "Readiness: " + state.readiness.status,
     "Errors: " + String(result.error_count),
     "Warnings: " + String(result.warning_count),
   ];

@@ -36,6 +36,23 @@ export function readOptionalStringOption(
   return value;
 }
 
+export function readRequiredStringOption(
+  options: CommandOptionValues,
+  property: string,
+  flag = property,
+): string {
+  const value = readOptionalStringOption(options, property, flag);
+  if (value === undefined || value.trim() === "") {
+    throw new PmError(
+      "invalid_arguments",
+      "Option --" + flag + " requires a non-empty value.",
+      EXIT_CODES.usage,
+    );
+  }
+
+  return value;
+}
+
 export function readBooleanOption(
   options: CommandOptionValues,
   property: string,

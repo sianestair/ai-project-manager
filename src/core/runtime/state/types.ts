@@ -11,6 +11,8 @@ export type ChangeStatus = "active" | "blocked" | "completed";
 export type GateStatus = "pending" | "confirmed" | "invalidated";
 export type MaterialSetName = "requirements" | "design" | "delivery" | "knowledge";
 export type ReadinessStatus = "not_assessed" | "pass" | "concerns" | "fail" | "stale";
+export type GateName = "requirements" | "design" | "acceptance" | "knowledge";
+export type ConfirmationActor = "user" | "ai_project_manager";
 
 export interface ProjectConfig {
   schema_version: 1;
@@ -34,9 +36,10 @@ export interface MaterialGroup {
 export interface Confirmation {
   revision: number;
   artifacts: ArtifactDigest[];
-  confirmed_by: "user" | "ai_project_manager";
+  confirmed_by: ConfirmationActor;
   confirmed_at: string;
   summary: string;
+  evidence: string;
 }
 
 export interface Gate {
@@ -51,6 +54,13 @@ export interface ReadinessConcern {
   owner: string;
   resolution: string | null;
   touches_user_confirmation: boolean;
+}
+
+export interface ReadinessRecord {
+  status: ReadinessStatus;
+  assessed_artifacts: ArtifactDigest[];
+  concerns: ReadinessConcern[];
+  assessed_at: string | null;
 }
 
 export interface Blocker {
@@ -95,12 +105,7 @@ export interface ChangeState {
     acceptance: Gate;
     knowledge: Gate;
   };
-  readiness: {
-    status: ReadinessStatus;
-    assessed_artifacts: ArtifactDigest[];
-    concerns: ReadinessConcern[];
-    assessed_at: string | null;
-  };
+  readiness: ReadinessRecord;
   implementation: {
     status: "not_started" | "in_progress" | "verified";
     baseline_revision: string | null;
@@ -146,6 +151,35 @@ export interface ResolvedMaterialSet {
   digest: string | null;
 }
 
+export interface ResolvedGate {
+  status: GateStatus;
+  persisted_status: GateStatus;
+  material_set: MaterialSetName;
+  confirmations: Confirmation[];
+  current_confirmation: Confirmation | null;
+  valid: boolean;
+  next_revision: number;
+  invalid_reason: string | null;
+}
+
+export interface ResolvedReadiness extends ReadinessRecord {
+  persisted_status: ReadinessStatus;
+  fresh: boolean;
+  ready: boolean;
+  invalid_reason: string | null;
+}
+
+export interface SelfCheckFact {
+  path: string;
+  section: string;
+  complete: boolean;
+  reason: string | null;
+}
+
+export interface DesignPermissionFact extends SelfCheckFact {
+  authority: ConfirmationActor | null;
+}
+
 export interface AvailableAction extends NextAction {
   id: string;
   description: string;
@@ -173,8 +207,10 @@ export interface ResolvedChangeState {
     project_revision: string | null;
   };
   materials: Record<MaterialSetName, ResolvedMaterialSet>;
-  gates: ChangeState["gates"];
-  readiness: ChangeState["readiness"];
+  gates: Record<GateName, ResolvedGate>;
+  readiness: ResolvedReadiness;
+  self_checks: Record<GateName, SelfCheckFact>;
+  design_permission: DesignPermissionFact;
   blockers: Blocker[];
   review: ChangeState["review"];
   available_actions: AvailableAction[];

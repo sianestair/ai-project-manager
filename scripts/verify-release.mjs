@@ -68,8 +68,42 @@ async function smokeRelease(releaseRoot, projectRoot) {
   assert.equal(version.stdout.trim(), "0.1.0");
   runPm(releaseRoot, ["init", "--project", projectRoot, "--project-id", "release-smoke"]);
   runPm(releaseRoot, ["change", "start", "smoke-change", "--project", projectRoot]);
+
+  const requirementsPath = join(
+    projectRoot,
+    "changes",
+    "active",
+    "smoke-change",
+    "requirements.md",
+  );
+  const requirements = await readFile(requirementsPath, "utf8");
+  await writeFile(
+    requirementsPath,
+    requirements.replace(
+      "## 需求门前自检\n\n待执行。",
+      "## 需求门前自检\n\n需求目标、范围、非范围和验收标准均已检查。",
+    ),
+    "utf8",
+  );
+  const confirmation = runPm(releaseRoot, [
+    "confirm",
+    "requirements",
+    "smoke-change",
+    "--confirmed-by",
+    "user",
+    "--summary",
+    "Release smoke requirements baseline.",
+    "--evidence",
+    "Explicit release smoke confirmation.",
+    "--project",
+    projectRoot,
+    "--json",
+  ]);
+  assert.equal(JSON.parse(confirmation.stdout).revision, 1);
+
   const status = runPm(releaseRoot, ["status", "smoke-change", "--project", projectRoot, "--json"]);
-  assert.equal(JSON.parse(status.stdout).change.phase, "requirements");
+  assert.equal(JSON.parse(status.stdout).change.phase, "design");
+  assert.equal(JSON.parse(status.stdout).gates.requirements.valid, true);
   const validation = runPm(releaseRoot, [
     "validate",
     "smoke-change",

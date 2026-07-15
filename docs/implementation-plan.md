@@ -9,7 +9,7 @@ Agent 支持依据：[agent-support-research.md](agent-support-research.md)
 方法调研依据：[agentic-development-frameworks-research.md](agentic-development-frameworks-research.md)
 第一阶段目标平台：Codex
 
-实施进度：Slice 1（I-01～I-06）及 Vite+、`src/`、单一自包含 `dist/` 发布基线均已完成并验证；CAC 命令注册与 `commands/<command>/index.ts` CLI 组织基线已接入；下一切片为确认、门前自检与 readiness。
+实施进度：Slice 1（I-01～I-06）和 Slice 2（I-07～I-09）均已完成并验证；Vite+、`src/`、单一自包含 `dist/`、CAC 命令目录、确认材料 digest、readiness 新鲜度与 `pm confirm` 已形成可运行基线；下一切片为 blocker、回退与评审收敛。
 
 ## 1. 计划目标与不可变边界
 
@@ -136,8 +136,15 @@ src/
     runtime/
       cli/
         main.ts
+        create-cli.ts
         output.ts
         errors.ts
+        commands/
+          init/index.ts
+          change/start/index.ts
+          status/index.ts
+          validate/index.ts
+          confirm/index.ts
       project/
         discover.ts
         init.ts
@@ -154,12 +161,15 @@ src/
         actions.ts
         invariants.ts
       governance/
+        artifacts.ts
         confirmations.ts
         readiness.ts
+        self-checks.ts
         blockers.ts
         review.ts
         invalidation.ts
       operations/
+        confirm.ts
         validate.ts
         knowledge-preview.ts
         knowledge-apply.ts
@@ -392,6 +402,8 @@ pm init
 
 #### I-07 确认材料集合与 digest 失效
 
+**实施状态**：已完成并通过内容变化、文件集合变化、revision 追加与新进程解析测试。
+
 - **目标**：解析完整确认对象，验证 confirmation revision/artifacts，并在集合或内容变化后把旧确认解析为失效。
 - **Consumes**：gate material_set、required/included、当前 digest、历史 confirmations。
 - **Produces**：confirmation validity facts、下一 revision、失效 diagnostics。
@@ -402,6 +414,8 @@ pm init
 
 #### I-08 readiness 记录与门规则
 
+**实施状态**：已完成并通过 pass、fail、stale、未处置/已处置 concerns 与用户权限分类测试。
+
 - **目标**：实现 readiness 结构验证、assessed artifacts 新鲜度、concern 处置约束和进入实施的机械门。
 - **Consumes**：AI 写入的 readiness 结论、需求/设计/任务材料摘要、concerns。
 - **Produces**：fresh pass/concerns/fail/stale facts、available/blocked actions。
@@ -411,6 +425,8 @@ pm init
 - **依据**：[requirements.md](requirements.md) R4、R5、R11；[architecture.md](architecture.md) §4.3、§5.1、§5.3、已确认基线 12；[agentic-development-frameworks-research.md](agentic-development-frameworks-research.md) I-02、I-03。
 
 #### I-09 `pm confirm` 与阶段推进
+
+**实施状态**：已完成并通过显式元数据、确认责任、门前自检、阶段推进、原子 YAML 写入与独立发布目录测试。
 
 - **目标**：在门前条件满足且调用者提供明确确认元数据时，原子记录 requirements/design/acceptance/knowledge 确认并推进状态。
 - **Consumes**：gate、change id、confirmed_by、summary、evidence、当前 resolved state。

@@ -99,6 +99,7 @@ export default defineConfig({
   test: {
     include: ["tests/**/*.test.ts"],
     environment: "node",
+    testTimeout: 15_000,
   },
   pack: {
     entry: {

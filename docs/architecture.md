@@ -451,12 +451,15 @@ confirmations:
     confirmed_by: user
     confirmed_at: <iso-8601>
     summary: 确认目标、范围、非范围和验收标准
+    evidence: 用户在当前材料评审后明确确认
 ```
 
 设计门的 `confirmed_by` 可以是：
 
 - `user`：设计含必须由用户决定的事项。
 - `ai_project_manager`：设计只含确认范围内的局部、可逆实现选择；必须同时记录权限分类和理由。
+
+第一版在 `design/README.md` 的“权限分类”小节使用两个固定字段：`确认责任：user | ai_project_manager` 与非空的 `理由`。CLI 只验证字段存在、责任枚举以及 readiness concern 是否触及用户权限；设计是否真的属于重大决定仍由 AI 项目经理按权限策略评估，CLI 不根据措辞替代该判断。
 
 需求、验收和知识门只能由用户确认。文件内容变化导致摘要不匹配时，工具将对应确认标记为失效，不能继续沿用旧确认。
 
@@ -689,17 +692,24 @@ src/
 │  │  └─ ai-project-manager/
 │  │     └─ SKILL.md
 │  └─ runtime/
-│     └─ cli/
-│        ├─ main.ts
-│        ├─ create-cli.ts
-│        ├─ options.ts
-│        ├─ commands/
-│        │  ├─ init/index.ts
-│        │  ├─ change/start/index.ts
-│        │  ├─ status/index.ts
-│        │  └─ validate/index.ts
-│        ├─ output.ts
-│        └─ errors.ts
+│     ├─ cli/
+│     │  ├─ main.ts
+│     │  ├─ create-cli.ts
+│     │  ├─ options.ts
+│     │  ├─ commands/
+│     │  │  ├─ init/index.ts
+│     │  │  ├─ change/start/index.ts
+│     │  │  ├─ confirm/index.ts
+│     │  │  ├─ status/index.ts
+│     │  │  └─ validate/index.ts
+│     │  ├─ output.ts
+│     │  └─ errors.ts
+│     ├─ governance/
+│     │  ├─ confirmations.ts
+│     │  ├─ readiness.ts
+│     │  └─ self-checks.ts
+│     └─ operations/
+│        └─ confirm.ts
 └─ adapters/
    └─ codex/
       ├─ ... Plugin Manifest 与安装材料

@@ -40,12 +40,19 @@ test("CAC command registry exposes stable help and version contracts", () => {
   assert.equal(help.status, 0, help.stderr);
   assert.match(help.stdout, /AI Project Manager CLI/);
   assert.match(help.stdout, /change start <id>/);
+  assert.match(help.stdout, /confirm <gate> <id>/);
   assert.doesNotMatch(help.stdout, /<operation>/);
 
   const changeHelp = runCli(["change", "start", "--help"]);
   assert.equal(changeHelp.status, 0, changeHelp.stderr);
   assert.match(changeHelp.stdout, /pm change start <id>/);
   assert.match(changeHelp.stdout, /--title <title>/);
+
+  const confirmHelp = runCli(["confirm", "--help"]);
+  assert.equal(confirmHelp.status, 0, confirmHelp.stderr);
+  assert.match(confirmHelp.stdout, /pm confirm <gate> <id>/);
+  assert.match(confirmHelp.stdout, /--confirmed-by <actor>/);
+  assert.match(confirmHelp.stdout, /--evidence <evidence>/);
 
   const version = runCli(["--version"]);
   assert.equal(version.status, 0, version.stderr);

@@ -5,6 +5,9 @@ import {
   readProjectConfig,
 } from "../project/discover.js";
 import { resolveMaterialSets } from "../materials/sets.js";
+import { resolveConfirmations } from "../governance/confirmations.js";
+import { resolveReadiness } from "../governance/readiness.js";
+import { resolveSelfChecks } from "../governance/self-checks.js";
 import type { Diagnostic, ResolvedChangeState } from "./types.js";
 import { deriveActions, nextActionIsAvailable } from "./actions.js";
 import { validateStateInvariants } from "./invariants.js";
@@ -18,11 +21,26 @@ export async function resolveCanonicalState(input: {
   const located = await locateActiveChange(projectRoot, input.changeId);
   const state = await readChangeState(located.changeDirectory);
   const materialResult = await resolveMaterialSets(located.changeDirectory, state);
+  const confirmationResult = resolveConfirmations(state, materialResult.materials);
+  const readinessResult = resolveReadiness(state.readiness, materialResult.materials);
+  const selfCheckResult = await resolveSelfChecks(located.changeDirectory);
   const diagnostics: Diagnostic[] = [
     ...validateStateInvariants(state, located.changeId),
     ...materialResult.diagnostics,
+    ...confirmationResult.diagnostics,
+    ...readinessResult.diagnostics,
   ];
-  const actions = deriveActions(state, diagnostics);
+  const actions = deriveActions(
+    state,
+    {
+      materials: materialResult.materials,
+      gates: confirmationResult.gates,
+      readiness: readinessResult.readiness,
+      selfChecks: selfCheckResult.selfChecks,
+      designPermission: selfCheckResult.designPermission,
+    },
+    diagnostics,
+  );
   const nextActionValid = nextActionIsAvailable(state.next_action, actions.available);
 
   if (!nextActionValid) {
@@ -48,8 +66,10 @@ export async function resolveCanonicalState(input: {
       project_revision: state.base.project_revision,
     },
     materials: materialResult.materials,
-    gates: state.gates,
-    readiness: state.readiness,
+    gates: confirmationResult.gates,
+    readiness: readinessResult.readiness,
+    self_checks: selfCheckResult.selfChecks,
+    design_permission: selfCheckResult.designPermission,
     blockers: state.blockers,
     review: state.review,
     available_actions: actions.available,
