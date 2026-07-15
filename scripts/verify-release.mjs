@@ -153,6 +153,7 @@ try {
     "core/schemas/project.schema.json",
     "core/schemas/change.schema.json",
     "core/schemas/knowledge-patch.schema.json",
+    "core/skills/ai-project-manager/SKILL.md",
   ]) {
     assert.equal(releaseFiles.includes(required), true, "dist is missing " + required);
   }

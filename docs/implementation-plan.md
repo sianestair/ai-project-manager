@@ -9,7 +9,7 @@ Agent 支持依据：[agent-support-research.md](agent-support-research.md)
 方法调研依据：[agentic-development-frameworks-research.md](agentic-development-frameworks-research.md)
 第一阶段目标平台：Codex
 
-实施进度：Slice 1（I-01～I-06）、Slice 2（I-07～I-09）、Slice 3（I-10～I-12）、Slice 4（I-13～I-15）和 Slice 5（I-16～I-18）均已完成并验证；Vite+、`src/`、单一自包含 `dist/`、CAC 命令目录、确认材料 digest、readiness、blocker/review、回退恢复、固定 Markdown 契约、任务依赖图、四维证据 readiness、知识三方 digest、可恢复原子应用与归档终态已形成可运行基线；下一切片为通用 Skill、Codex 适配器与最终验收。
+实施进度：Slice 1（I-01～I-06）、Slice 2（I-07～I-09）、Slice 3（I-10～I-12）、Slice 4（I-13～I-15）和 Slice 5（I-16～I-18）均已完成并验证；Slice 6 的 I-19 通用 `ai-project-manager` Skill 已完成并验证。Vite+、`src/`、单一自包含 `dist/`、CAC 命令目录、确认材料 digest、readiness、blocker/review、回退恢复、固定 Markdown 契约、任务依赖图、四维证据 readiness、知识三方 digest、可恢复原子应用、归档终态和 Agent 无关操作协议已形成可运行基线；下一任务为 I-20 Codex 适配器与单源投影。
 
 ## 1. 计划目标与不可变边界
 
@@ -576,6 +576,8 @@ pm init
 ### Slice 6：通用 Skill、Codex 适配器与最终验收
 
 #### I-19 通用 `ai-project-manager` Skill
+
+**实施状态**：已完成；核心 Skill 覆盖发现/恢复、状态权威、阶段职责、四类门前自检、readiness、权限、任务与四维证据、blocker/review、回退、知识事务和归档，并通过源目录及 `dist/core/skills/` 的标准 Skill 验证与平台无关契约测试。
 
 - **目标**：把发现顺序、阶段职责、门前自检、readiness、权限、回退、blocker、评审、任务、四维验证、知识和恢复写成一个 Agent 无关 Skill。
 - **Consumes**：完整 CLI 行为、action IDs、材料模板、需求/架构基线。
