@@ -18,7 +18,7 @@ import type {
   ResolvedMaterialSet,
 } from "../../src/core/runtime/state/types.js";
 
-function requirementsDocument(): string {
+export function requirementsDocument(): string {
   return [
     "# Knowledge fixture requirements",
     "",
@@ -38,7 +38,7 @@ function requirementsDocument(): string {
   ].join("\n");
 }
 
-function designDocument(): string {
+export function designDocument(): string {
   return [
     "# Knowledge fixture design",
     "",
@@ -73,7 +73,7 @@ function designDocument(): string {
   ].join("\n");
 }
 
-function deliveryDocument(input: {
+export function deliveryDocument(input: {
   baseline: string;
   final: string;
   checkpoint: string;
@@ -127,7 +127,7 @@ function deliveryDocument(input: {
   ].join("\n");
 }
 
-function knowledgeDocument(): string {
+export function knowledgeDocument(): string {
   return [
     "# Knowledge fixture candidates",
     "",

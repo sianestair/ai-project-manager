@@ -9,7 +9,7 @@ Agent 支持依据：[agent-support-research.md](agent-support-research.md)
 方法调研依据：[agentic-development-frameworks-research.md](agentic-development-frameworks-research.md)
 第一阶段目标平台：Codex
 
-实施进度：Slice 1（I-01～I-06）、Slice 2（I-07～I-09）、Slice 3（I-10～I-12）、Slice 4（I-13～I-15）和 Slice 5（I-16～I-18）均已完成并验证；Slice 6 的 I-19 通用 `ai-project-manager` Skill 与 I-20 Codex 适配器/单源投影已完成并验证。Vite+、`src/`、单一自包含 `dist/`、CAC 命令目录、确认材料 digest、readiness、blocker/review、回退恢复、固定 Markdown 契约、任务依赖图、四维证据 readiness、知识三方 digest、可恢复原子应用、归档终态、Agent 无关操作协议与 Codex 标准插件安装资产已形成可运行基线；下一任务为 I-21 自动化公共 E2E 与真实 Codex 项目验收。
+实施进度：Slice 1（I-01～I-06）、Slice 2（I-07～I-09）、Slice 3（I-10～I-12）、Slice 4（I-13～I-15）和 Slice 5（I-16～I-18）均已完成并验证；Slice 6 的 I-19 通用 `ai-project-manager` Skill、I-20 Codex 适配器/单源投影和 I-21 自动化公共 E2E 已完成并验证。Vite+、`src/`、单一自包含 `dist/`、CAC 命令目录、确认材料 digest、readiness、blocker/review、回退恢复、固定 Markdown 契约、任务依赖图、四维证据 readiness、知识三方 digest、可恢复原子应用、归档终态、Agent 无关操作协议、Codex 标准插件安装资产与“连接钱包登录”自动闭环已形成可运行基线；I-21 的真实 Codex 项目验收仍须在用户选定的目标项目中执行并由用户完成四类确认，不能由仓库夹具或自动测试替代。
 
 ## 1. 计划目标与不可变边界
 
@@ -607,6 +607,8 @@ pm init
 - **依据**：[requirements.md](requirements.md) R1、R9、成功标准 10/11；[architecture.md](architecture.md) §9.2、§9.3；[agent-support-research.md](agent-support-research.md) §5、§6；[agentic-development-frameworks-research.md](agentic-development-frameworks-research.md) I-08。
 
 #### I-21 自动化公共 E2E 与“连接钱包登录”真实验收
+
+**实施状态**：自动化公共 E2E 已完成；发布 CLI 已覆盖原始意图不自动确认、需求/重大设计确认、设计确认前中断恢复、局部实现回退、实施中断恢复、四维验证、验收、知识三目标原子应用、归档和新 Change 状态权威边界。真实 Codex 项目验收尚未执行；其目标项目选择、需求/设计/验收/知识确认必须由用户提供或明确完成，执行与证据要求见 [codex-acceptance.md](codex-acceptance.md)。
 
 - **目标**：先用夹具自动走完整状态闭环，再在 Codex 中对一个真实项目从“实现连接钱包登录”意图完成两次中断、回退、验收、知识应用和归档。
 - **Consumes**：打包后的 CLI、Codex 适配器、通用 Skill、真实目标项目、用户在流程中的确认。

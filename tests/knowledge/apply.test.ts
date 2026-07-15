@@ -3,8 +3,10 @@ import { access, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
 import { test } from "vite-plus/test";
+import { stringify } from "yaml";
 
 import { PmError } from "../../src/core/runtime/cli/errors.js";
+import { digestFile } from "../../src/core/runtime/materials/digest.js";
 import { confirmChange } from "../../src/core/runtime/operations/confirm.js";
 import {
   applyKnowledge,
@@ -13,7 +15,11 @@ import {
 import { previewKnowledge } from "../../src/core/runtime/operations/knowledge-preview.js";
 import { SimulatedInterruption } from "../../src/core/runtime/operations/transaction.js";
 import { resolveCanonicalState } from "../../src/core/runtime/state/resolver.js";
-import { createKnowledgeProject, readText } from "../helpers/knowledge-project.js";
+import {
+  createKnowledgeProject,
+  readFixtureState,
+  readText,
+} from "../helpers/knowledge-project.js";
 
 async function exists(path: string): Promise<boolean> {
   try {
@@ -176,6 +182,48 @@ test("an interrupted apply can commit all post-images and reach archive readines
     });
     assert.equal(state.knowledge_promotion.verified, true);
     assert.equal(state.archive_readiness.ready, true);
+  } finally {
+    await rm(fixture.projectRoot, { recursive: true, force: true });
+  }
+});
+
+test("knowledge apply reconciles registered dependencies changed by its own confirmed patch", async () => {
+  const changeId = "knowledge-dependency-reconciliation";
+  const fixture = await createKnowledgeProject(changeId);
+  try {
+    const state = await readFixtureState(fixture.changeRoot);
+    state.base.dependencies.knowledge = [
+      {
+        path: "knowledge-base/facts/fixture/current.md",
+        digest: await digestFile(fixture.currentFactPath),
+        purpose: "Current fact consumed by this Change.",
+      },
+      {
+        path: "knowledge-base/decisions/fixture/obsolete.md",
+        digest: await digestFile(fixture.obsoleteDecisionPath),
+        purpose: "Obsolete decision consumed by this Change.",
+      },
+    ];
+    await writeFile(
+      join(fixture.changeRoot, "change.yaml"),
+      stringify(state, { lineWidth: 0 }),
+      "utf8",
+    );
+
+    await prepareConfirmedKnowledge(fixture.projectRoot, changeId);
+    await applyKnowledge({ project: fixture.projectRoot, changeId });
+
+    const applied = await readFixtureState(fixture.changeRoot);
+    assert.deepEqual(applied.base.dependencies.knowledge, [
+      {
+        path: "knowledge-base/facts/fixture/current.md",
+        digest: await digestFile(fixture.currentFactPath),
+        purpose: "Current fact consumed by this Change.",
+      },
+    ]);
+    const resolved = await resolveCanonicalState({ project: fixture.projectRoot, changeId });
+    assert.equal(resolved.recovery.requires_reassessment, false);
+    assert.equal(resolved.archive_readiness.ready, true);
   } finally {
     await rm(fixture.projectRoot, { recursive: true, force: true });
   }

@@ -126,9 +126,21 @@ async function rollbackTransaction(input: {
 function verifiedState(
   state: ChangeState,
   appliedFiles: ArtifactDigest[],
+  targets: KnowledgePatchEnvelope["targets"],
   at: string,
 ): ChangeState {
   const next = structuredClone(state);
+  const targetsByPath = new Map(targets.map((target) => [target.path, target]));
+  next.base.dependencies.knowledge = next.base.dependencies.knowledge.flatMap((dependency) => {
+    const target = targetsByPath.get(dependency.path);
+    if (target === undefined) {
+      return [dependency];
+    }
+    if (target.after_digest === "absent") {
+      return [];
+    }
+    return [{ ...dependency, digest: target.after_digest }];
+  });
   next.knowledge_promotion.status = "verified";
   next.knowledge_promotion.applied_files = appliedFiles;
   next.phase = "archive_ready";
@@ -237,7 +249,7 @@ export async function applyKnowledge(
   }
   const state = await readChangeState(located.changeDirectory);
   if (state.knowledge_promotion.patch_digest === null) {
-    const next = verifiedState(state, [], now());
+    const next = verifiedState(state, [], [], now());
     await validateChangeState(next);
     await writeYamlAtomic(join(located.changeDirectory, "change.yaml"), next);
     return {
@@ -276,7 +288,7 @@ export async function applyKnowledge(
       hooks,
     });
     const appliedFiles = await appliedArtifacts(projectRoot, patch);
-    const next = verifiedState(state, appliedFiles, now());
+    const next = verifiedState(state, appliedFiles, patch.targets, now());
     await validateChangeState(next);
     await hooks.beforeStateWrite?.();
     await writeYamlAtomic(join(located.changeDirectory, "change.yaml"), next);
@@ -381,7 +393,7 @@ export async function recoverKnowledgeTransaction(input: {
     hooks: {},
   });
   const appliedFiles = await appliedArtifacts(projectRoot, patch);
-  const next = verifiedState(state, appliedFiles, new Date().toISOString());
+  const next = verifiedState(state, appliedFiles, patch.targets, new Date().toISOString());
   await validateChangeState(next);
   await writeYamlAtomic(join(located.changeDirectory, "change.yaml"), next);
   await removeTransaction(located.changeDirectory);
