@@ -138,6 +138,9 @@ export async function invalidateChange(
       openBlockers: blockerResult.openBlockers,
       review: reviewResult.review,
       recovery: recoveryResult.recovery,
+      traceability: resolved.traceability,
+      tasks: resolved.tasks,
+      verification: resolved.verification,
     },
     predictedDiagnostics,
   );

@@ -166,6 +166,9 @@ export async function confirmChange(
       openBlockers: resolved.open_blockers,
       review: resolved.review,
       recovery: resolved.recovery,
+      traceability: resolved.traceability,
+      tasks: resolved.tasks,
+      verification: resolved.verification,
     },
     predictedDiagnostics,
   );

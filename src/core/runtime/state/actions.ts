@@ -14,6 +14,9 @@ import type {
   ResolvedReview,
   RecoveryFacts,
   SelfCheckFact,
+  TaskContractFacts,
+  TraceabilityFacts,
+  VerificationFacts,
 } from "./types.js";
 
 interface CatalogEntry {
@@ -31,6 +34,9 @@ export interface ActionContext {
   openBlockers: Blocker[];
   review: ResolvedReview;
   recovery: RecoveryFacts;
+  traceability: TraceabilityFacts;
+  tasks: TaskContractFacts;
+  verification: VerificationFacts;
 }
 
 const ACTION_CATALOG: Record<string, CatalogEntry> = {
@@ -185,6 +191,25 @@ const RECOVERABLE_GATE_DIAGNOSTICS = new Set([
   "readiness_concern_unresolved",
   "blocker_status_conflict",
   "non_converging_blocker_required",
+  "requirements_record_missing",
+  "acceptance_record_missing",
+  "acceptance_requirement_reference_missing",
+  "design_record_missing",
+  "design_requirement_reference_missing",
+  "requirement_uncovered_by_design",
+  "design_coverage_missing",
+  "design_coverage_duplicate",
+  "design_coverage_invalid",
+  "task_record_missing",
+  "artifact_uncovered_by_task",
+  "verification_dimension_missing",
+  "verification_dimension_duplicate",
+  "verification_dimension_invalid",
+  "artifact_uncovered_by_evidence",
+  "evidence_record_missing",
+  "tasks_not_completed",
+  "implementation_not_verified",
+  "implementation_final_revision_not_current",
 ]);
 
 const PHASE_ORDER: Record<ChangeState["phase"], number> = {
@@ -398,20 +423,47 @@ export function deriveActions(
           "Invalidate the affected design and downstream state before reconfirming requirements.",
         ),
       );
-    } else if (
-      context.selfChecks.requirements.complete &&
-      context.materials.requirements.digest !== null
-    ) {
+    } else if (!context.selfChecks.requirements.complete) {
+      addBlocked(
+        blockedAction(
+          "request_requirements_confirmation",
+          "requirements_self_check_not_recorded",
+          "ai_project_manager",
+          "Complete the requirements self-check in requirements.md.",
+        ),
+      );
+      addBlocked(
+        blockedAction(
+          "confirm_requirements",
+          "requirements_self_check_not_recorded",
+          "ai_project_manager",
+          "Complete the requirements self-check in requirements.md.",
+        ),
+      );
+    } else if (!context.traceability.requirements_ready) {
+      addBlocked(
+        blockedAction(
+          "request_requirements_confirmation",
+          "requirements_traceability_incomplete",
+          "ai_project_manager",
+          "Add unique REQ-* and AC-* records with valid requirement traceability.",
+        ),
+      );
+      addBlocked(
+        blockedAction(
+          "confirm_requirements",
+          "requirements_traceability_incomplete",
+          "ai_project_manager",
+          "Add unique REQ-* and AC-* records with valid requirement traceability.",
+        ),
+      );
+    } else if (context.materials.requirements.digest !== null) {
       const inputs = confirmationInputs(context, "requirements");
       addAvailable(availableAction("request_requirements_confirmation", { inputs }));
       addAvailable(availableAction("confirm_requirements", { inputs }));
     } else {
-      const reason = context.selfChecks.requirements.complete
-        ? "requirements_material_set_incomplete"
-        : "requirements_self_check_not_recorded";
-      const resumeWhen = context.selfChecks.requirements.complete
-        ? "Resolve every required and included requirements material."
-        : "Complete the requirements self-check in requirements.md.";
+      const reason = "requirements_material_set_incomplete";
+      const resumeWhen = "Resolve every required and included requirements material.";
       addBlocked(
         blockedAction(
           "request_requirements_confirmation",
@@ -466,6 +518,20 @@ export function deriveActions(
         "ai_project_manager",
         "Record the design permission classification and rationale.",
       );
+    } else if (!context.traceability.design_ready) {
+      designBlock = blockedAction(
+        "confirm_design",
+        "design_traceability_incomplete",
+        "ai_project_manager",
+        "Complete DES-* coverage and all seven design applicability declarations.",
+      );
+    } else if (!context.tasks.ready) {
+      designBlock = blockedAction(
+        "confirm_design",
+        "task_contracts_incomplete",
+        "ai_project_manager",
+        "Complete valid TASK-* contracts covering requirements, design, and acceptance criteria.",
+      );
     } else if (!context.readiness.ready) {
       designBlock = blockedAction(
         "confirm_design",
@@ -513,7 +579,16 @@ export function deriveActions(
     );
   } else if (state.phase === "implementation") {
     if (state.implementation.status === "not_started") {
-      if (context.readiness.ready) {
+      if (!context.traceability.design_ready || !context.tasks.ready) {
+        addBlocked(
+          blockedAction(
+            "start_implementation",
+            "task_contracts_incomplete",
+            "ai_project_manager",
+            "Restore complete design traceability and task contracts before implementation.",
+          ),
+        );
+      } else if (context.readiness.ready) {
         addAvailable(availableAction("start_implementation"));
       } else {
         addBlocked(
@@ -530,8 +605,17 @@ export function deriveActions(
       addAvailable(availableAction("review_task"));
       addAvailable(availableAction("review_change"));
       addAvailable(availableAction("record_blocker"));
-    } else {
+    } else if (context.verification.ready_for_acceptance) {
       addAvailable(availableAction("prepare_acceptance"));
+    } else {
+      addBlocked(
+        blockedAction(
+          "prepare_acceptance",
+          "verification_not_ready",
+          "ai_project_manager",
+          "Complete all tasks and current four-dimensional evidence bound to implementation revisions.",
+        ),
+      );
     }
   }
 
@@ -543,6 +627,15 @@ export function deriveActions(
           "implementation_not_verified",
           "ai_project_manager",
           "Complete implementation verification and acceptance evidence.",
+        ),
+      );
+    } else if (!context.verification.ready_for_acceptance) {
+      addBlocked(
+        blockedAction(
+          "confirm_acceptance",
+          "verification_not_ready",
+          "ai_project_manager",
+          "Complete all tasks and current four-dimensional evidence bound to implementation revisions.",
         ),
       );
     } else {

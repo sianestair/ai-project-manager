@@ -79,10 +79,19 @@ async function smokeRelease(releaseRoot, projectRoot) {
   const requirements = await readFile(requirementsPath, "utf8");
   await writeFile(
     requirementsPath,
-    requirements.replace(
-      "## 需求门前自检\n\n待执行。",
-      "## 需求门前自检\n\n需求目标、范围、非范围和验收标准均已检查。",
-    ),
+    requirements
+      .replace(
+        "## 需求记录\n\n使用 `### REQ-001: 标题` 记录稳定需求标识；正文可自由组织。",
+        "## 需求记录\n\n### REQ-001: 验证发布包\n\n- 说明：发布包必须可以独立运行。",
+      )
+      .replace(
+        "## 验收标准\n\n使用 `### AC-001: 标题`，并通过 `- 追溯：REQ-001` 引用需求。",
+        "## 验收标准\n\n### AC-001: CLI 可运行\n\n- 追溯：REQ-001\n- 断言：离线安装后的 CLI 可执行。",
+      )
+      .replace(
+        "## 需求门前自检\n\n待执行。",
+        "## 需求门前自检\n\n需求目标、范围、非范围和验收标准均已检查。",
+      ),
     "utf8",
   );
   const confirmation = runPm(releaseRoot, [

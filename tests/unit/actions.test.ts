@@ -111,6 +111,31 @@ function actionContext(state: ChangeState): ActionContext {
       },
       resume_conditions: [],
     },
+    traceability: {
+      requirements_ready: true,
+      design_ready: true,
+      design_scope_ready: true,
+      knowledge_ready: false,
+      uncovered_requirements_by_design: [],
+      dangling_references: [],
+      duplicate_ids: [],
+    },
+    tasks: {
+      records: [],
+      ready: true,
+      all_completed: false,
+      uncovered_requirements: [],
+      uncovered_design: [],
+      uncovered_acceptance: [],
+    },
+    verification: {
+      dimensions: [],
+      evidence: [],
+      structurally_complete: false,
+      evidence_fresh: false,
+      traceability_complete: false,
+      ready_for_acceptance: false,
+    },
   };
 }
 

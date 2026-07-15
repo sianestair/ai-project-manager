@@ -52,12 +52,32 @@ function confirmArgs(gate: string, changeId: string, projectRoot: string) {
 async function prepareImplementation(projectRoot: string, changeRoot: string, changeId: string) {
   await replaceText(
     join(changeRoot, "requirements.md"),
+    "## 需求记录\n\n使用 `### REQ-001: 标题` 记录稳定需求标识；正文可自由组织。",
+    "## 需求记录\n\n### REQ-001: 支持工作流回退\n\n- 说明：状态必须可以确定性失效。",
+  );
+  await replaceText(
+    join(changeRoot, "requirements.md"),
+    "## 验收标准\n\n使用 `### AC-001: 标题`，并通过 `- 追溯：REQ-001` 引用需求。",
+    "## 验收标准\n\n### AC-001: 回退结果可验证\n\n- 追溯：REQ-001\n- 断言：状态门按影响范围失效。",
+  );
+  await replaceText(
+    join(changeRoot, "requirements.md"),
     "## 需求门前自检\n\n待执行。",
     "## 需求门前自检\n\n目标、范围、非范围、验收标准、冲突和遗漏均已检查。",
   );
   assert.equal(runCli(confirmArgs("requirements", changeId, projectRoot)).status, 0);
 
   const designPath = join(changeRoot, "design", "README.md");
+  await replaceText(
+    designPath,
+    "- 架构与模块职责：待评估\n- 接口与协议：待评估\n- 数据：待评估\n- 交互：待评估\n- 安全：待评估\n- 运行：待评估\n- 决策记录：待评估",
+    "- 架构与模块职责：涉及：状态失效由治理模块负责\n- 接口与协议：涉及：提供 invalidate CLI\n- 数据：不适用：不引入业务数据\n- 交互：不适用：没有界面变化\n- 安全：不适用：没有信任边界变化\n- 运行：不适用：没有部署变化\n- 决策记录：不适用：没有新增长期决定",
+  );
+  await replaceText(
+    designPath,
+    "## 设计记录\n\n使用 `### DES-001: 标题`，并通过 `- 追溯：REQ-001, AC-001` 建立基本覆盖。",
+    "## 设计记录\n\n### DES-001: 按阶段失效\n\n- 追溯：REQ-001, AC-001\n- 决定：保留上游有效状态并清理下游派生状态。",
+  );
   await replaceText(
     designPath,
     "## 权限分类\n\n- 确认责任：待分类\n- 理由：待记录。",
@@ -67,6 +87,11 @@ async function prepareImplementation(projectRoot: string, changeRoot: string, ch
     designPath,
     "## 设计门前自检\n\n待执行。",
     "## 设计门前自检\n\n需求覆盖、设计类型、风险、替代方案和权限分类均已检查。",
+  );
+  await replaceText(
+    join(changeRoot, "delivery", "README.md"),
+    "## 任务与依赖\n\n使用 `### TASK-001: 标题`。每项固定包含：目标、追溯、Consumes、Produces、预计修改范围、依赖任务、验证方法、预期结果、状态和证据。无依赖或暂无证据时明确写 `无`。",
+    "## 任务与依赖\n\n### TASK-001: 实现状态回退\n\n- 目标：实现确定性失效\n- 追溯：REQ-001, DES-001, AC-001\n- Consumes：确认后的需求和设计\n- Produces：invalidate 操作\n- 预计修改范围：src/core/runtime\n- 依赖任务：无\n- 验证方法：运行回退门测试\n- 预期结果：保留正确的上游状态\n- 状态：pending\n- 证据：无",
   );
 
   const status = runCli(["status", changeId, "--project", projectRoot, "--json"]);

@@ -238,6 +238,17 @@ Change 唯一的机器可读状态文件，保存身份、当前阶段、基线�
 
 标识只要求在单个 Change 内唯一。`pm validate` 检查引用存在和基本覆盖关系，AI 项目经理负责判断内容是否真正满足，工具不以“存在链接”替代业务验收。
 
+第一版运行时采用以下固定 Markdown 契约，不允许项目定义另一套 schema：
+
+- 记录标题统一为三级标题 `### PREFIX-001: 标题`；前缀只能是 `REQ`、`AC`、`DES`、`TASK`、`EVID`、`KNOW`，标识必须大写且在单个 Change 内唯一。代码围栏内的示例不进入索引。
+- `REQ-*` 与 `AC-*` 只出现在 requirements 材料，`DES-*` 只出现在 design 材料，`TASK-*` 与 `EVID-*` 只出现在 delivery 材料，`KNOW-*` 只出现在 knowledge 材料。错放、重复和悬空引用是确定性错误。
+- `design/README.md` 逐项声明“架构与模块职责、接口与协议、数据、交互、安全、运行、决策记录”，值固定为 `涉及：理由` 或 `不适用：理由`；缺项、重复项或无理由结论不能通过设计门。
+- 每项 `TASK-*` 使用项目符号字段 `目标`、`追溯`、`Consumes`、`Produces`、`预计修改范围`、`依赖任务`、`验证方法`、`预期结果`、`状态`、`证据`。无依赖或未完成任务暂无证据时显式写 `无`；状态只能是 `pending`、`in_progress`、`completed`、`blocked`，`completed` 必须引用当前 Change 中存在的 `EVID-*`。
+- delivery 验证摘要逐项声明 `Completeness`、`Correctness`、`Coherence`、`Engineering quality`，值为对应 `EVID-*` 引用或 `不适用：理由`。每项 `EVID-*` 固定包含 `维度`、`追溯`、`命令或操作`、`工作目录或环境`、`执行时间`、`退出码或结果`、`关键输出`、`断言`、`基线 revision`、`最终 revision`、`checkpoint digest`。
+- 证据必须晚于 Change 基线和当前 checkpoint，三个 revision/checkpoint 字段必须与 `change.yaml.implementation` 当前值一致；Git 可用时 `final_revision` 还必须等于当前 Git revision。CLI 只验证这些可机械判定事实，不根据输出措辞判断测试是否真的证明业务正确。
+
+初始模板只说明协议，不预造虚假的 `REQ-*` 等记录。草稿阶段允许记录尚不完整；请求确认或进入下游阶段时，相应缺失与未覆盖关系才成为状态门 diagnostic。已经显式写出的坏标题、错放、重复、悬空引用、任务字段错误或证据字段错误在任何阶段都直接报告。
+
 ### 3.6 archived Change 的契约
 
 归档时将完整 Change 目录从 `changes/active/` 移到 `changes/archived/`，不重新整理成另一种格式。归档后的 `change.yaml` 增加终态信息：
@@ -714,11 +725,20 @@ src/
 │     ├─ governance/
 │     │  ├─ blockers.ts
 │     │  ├─ confirmations.ts
+│     │  ├─ contracts.ts
 │     │  ├─ invalidation.ts
 │     │  ├─ readiness.ts
 │     │  ├─ recovery.ts
 │     │  ├─ review.ts
-│     │  └─ self-checks.ts
+│     │  ├─ self-checks.ts
+│     │  ├─ tasks.ts
+│     │  ├─ traceability.ts
+│     │  └─ verification.ts
+│     ├─ materials/
+│     │  └─ markdown-contract.ts
+│     ├─ state/
+│     │  ├─ actions.ts
+│     │  └─ resolver.ts
 │     └─ operations/
 │        ├─ confirm.ts
 │        └─ invalidate.ts
@@ -795,7 +815,7 @@ Codex 适配器只增加一个安装入口，不复制第二份 Skill 正文。
 | `pm init` | 初始化固定目录、项目配置和最小模板 |
 | `pm change start <id>` | 从项目当前状态创建 active Change 并记录基线 |
 | `pm status [id]` | 通过 canonical resolver 输出恢复摘要、available actions、blocked actions 和推荐下一动作 |
-| `pm validate [id]` | 校验 schema、材料摘要、阶段、门、readiness、blocker、评审状态和下一动作一致性 |
+| `pm validate [id]` | 校验 schema、材料摘要、Markdown 记录、跨材料追溯、任务依赖、四维证据新鲜度、阶段、门、readiness、blocker、评审状态和下一动作一致性 |
 | `pm confirm <gate> <id>` | 在已有明确确认且门前自检满足后，将材料摘要绑定到门记录 |
 | `pm invalidate <stage> <id> --reason <reason>` | 保留历史并使调用者明确指定的受影响阶段及下游门失效 |
 | `pm knowledge preview/apply <id>` | 生成或原子应用 `knowledge.patch`，并校验候选、补丁及目标 before/after digest |

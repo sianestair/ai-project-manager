@@ -21,6 +21,19 @@ export type InvalidationStage =
   | "knowledge";
 export type BlockerOwner = "user" | "ai_project_manager" | "external" | "external_system";
 export type ReviewOutcome = "passed" | "changes_requested";
+export type ArtifactRecordKind =
+  | "requirement"
+  | "acceptance"
+  | "design"
+  | "task"
+  | "evidence"
+  | "knowledge";
+export type TaskStatus = "pending" | "in_progress" | "completed" | "blocked";
+export type VerificationDimension =
+  | "completeness"
+  | "correctness"
+  | "coherence"
+  | "engineering_quality";
 
 export interface ProjectConfig {
   schema_version: 1;
@@ -233,6 +246,89 @@ export interface RecoveryFacts {
   resume_conditions: string[];
 }
 
+export interface MarkdownRecordFact {
+  id: string;
+  kind: ArtifactRecordKind;
+  title: string;
+  path: string;
+  line: number;
+  fields: Record<string, string>;
+  references: string[];
+}
+
+export interface ArtifactIndex {
+  records: MarkdownRecordFact[];
+  design_coverage: ContractDeclaration[];
+  verification_dimensions: ContractDeclaration[];
+}
+
+export interface ContractDeclaration {
+  name: string;
+  value: string;
+  path: string;
+  line: number;
+}
+
+export interface TraceabilityFacts {
+  requirements_ready: boolean;
+  design_ready: boolean;
+  design_scope_ready: boolean;
+  knowledge_ready: boolean;
+  uncovered_requirements_by_design: string[];
+  dangling_references: string[];
+  duplicate_ids: string[];
+}
+
+export interface TaskContractFact {
+  id: string;
+  path: string;
+  line: number;
+  title: string;
+  status: TaskStatus | null;
+  traceability: string[];
+  dependencies: string[];
+  evidence: string[];
+  valid: boolean;
+}
+
+export interface TaskContractFacts {
+  records: TaskContractFact[];
+  ready: boolean;
+  all_completed: boolean;
+  uncovered_requirements: string[];
+  uncovered_design: string[];
+  uncovered_acceptance: string[];
+}
+
+export interface VerificationDimensionFact {
+  dimension: VerificationDimension;
+  status: "covered" | "not_applicable" | "missing" | "invalid";
+  evidence_ids: string[];
+  reason: string | null;
+  path: string | null;
+  line: number | null;
+}
+
+export interface EvidenceFact {
+  id: string;
+  path: string;
+  line: number;
+  dimension: VerificationDimension | null;
+  traceability: string[];
+  executed_at: string | null;
+  fresh: boolean;
+  valid: boolean;
+}
+
+export interface VerificationFacts {
+  dimensions: VerificationDimensionFact[];
+  evidence: EvidenceFact[];
+  structurally_complete: boolean;
+  evidence_fresh: boolean;
+  traceability_complete: boolean;
+  ready_for_acceptance: boolean;
+}
+
 export interface AvailableAction extends NextAction {
   id: string;
   description: string;
@@ -268,6 +364,10 @@ export interface ResolvedChangeState {
   open_blockers: Blocker[];
   review: ResolvedReview;
   implementation: ChangeState["implementation"];
+  artifact_index: ArtifactIndex;
+  traceability: TraceabilityFacts;
+  tasks: TaskContractFacts;
+  verification: VerificationFacts;
   available_actions: AvailableAction[];
   blocked_actions: BlockedAction[];
   next_action: NextAction & {

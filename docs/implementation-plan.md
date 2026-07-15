@@ -9,7 +9,7 @@ Agent 支持依据：[agent-support-research.md](agent-support-research.md)
 方法调研依据：[agentic-development-frameworks-research.md](agentic-development-frameworks-research.md)
 第一阶段目标平台：Codex
 
-实施进度：Slice 1（I-01～I-06）、Slice 2（I-07～I-09）和 Slice 3（I-10～I-12）均已完成并验证；Vite+、`src/`、单一自包含 `dist/`、CAC 命令目录、确认材料 digest、readiness、blocker/review、`pm confirm`、`pm invalidate` 与依赖/checkpoint 恢复已形成可运行基线；下一切片为任务契约与四维验证。
+实施进度：Slice 1（I-01～I-06）、Slice 2（I-07～I-09）、Slice 3（I-10～I-12）和 Slice 4（I-13～I-15）均已完成并验证；Vite+、`src/`、单一自包含 `dist/`、CAC 命令目录、确认材料 digest、readiness、blocker/review、回退恢复、固定 Markdown 契约、任务依赖图与四维证据 readiness 已形成可运行基线；下一切片为知识补丁三方 digest、原子应用和归档。
 
 ## 1. 计划目标与不可变边界
 
@@ -163,6 +163,7 @@ src/
         invariants.ts
       governance/
         artifacts.ts
+        contracts.ts
         confirmations.ts
         readiness.ts
         self-checks.ts
@@ -170,6 +171,9 @@ src/
         review.ts
         invalidation.ts
         recovery.ts
+        tasks.ts
+        traceability.ts
+        verification.ts
       operations/
         confirm.ts
         invalidate.ts
@@ -228,6 +232,10 @@ dist/
 | project discovery | 定位项目根、Git revision、active Change 与固定目录 | cwd、显式 `--project`/change id、文件系统 | ProjectPaths、GitSnapshot、ChangeLocation | path/fs ports | 不根据 archived Change 或聊天猜测当前状态；多个 Change 时不自动合并 |
 | material set resolver | 展开 required/included，核对 README 索引与路径安全 | ChangeState、Change 目录、Markdown 索引 | 规范化 MaterialSet、缺失/多余/越界错误 | paths、Markdown contract parser | 不判断材料内容质量，不自动把未登记文件加入确认集合 |
 | digest engine | 计算文件、材料集合、工程范围和补丁摘要 | 规范化路径与内容 | SHA-256 digest、范围清单、drift facts | crypto、Git/file walker | 不证明内容正确，不把无关整体目录变化当成自动门 |
+| Markdown contract / ArtifactIndex | 从固定三级标题和项目符号字段生成 Change 内记录索引，忽略代码围栏示例并检查材料归属与唯一性 | requirements/design/delivery/knowledge Markdown | `REQ/AC/DES/TASK/EVID/KNOW` records、声明项、解析 diagnostics | material set、path safety | 不允许项目自定义 schema，不解释正文语义，不从标题措辞推断业务满足 |
+| traceability validator | 校验悬空引用、需求到设计覆盖、七类设计范围声明和基本知识引用 | ArtifactIndex | TraceabilityFacts、requirements/design gate diagnostics | Markdown contract | 不判断引用关系是否在语义上充分，不替用户确认需求或设计 |
+| task contract validator | 校验十个固定任务字段、状态枚举、依赖存在性与无环、完成证据及 REQ/DES/AC 覆盖 | ArtifactIndex 中的 TASK/EVID | TaskContractFacts、依赖图 diagnostics | traceability、Markdown fields | 不按时间或文件数评价粒度，不决定任务实现顺序或是否业务完成 |
+| verification validator | 校验四维声明、证据固定字段、覆盖、新鲜度及 baseline/final/checkpoint 绑定 | ArtifactIndex、TaskContractFacts、implementation state、Git revision | VerificationFacts、acceptance readiness diagnostics | digest/recovery/state | 不把退出码或“通过”措辞解释为业务正确，不替用户执行最终验收 |
 | canonical resolver | 汇总 schema、材料、digest、门、readiness、blocker、review、revision 和事务恢复事实 | ProjectSnapshot、ChangeState、当前文件 | ResolvedChangeState、diagnostics、recovery facts | 前述纯模块 | 不选择方案、不推断用户确认、不修改文件 |
 | action derivation | 从 resolved facts 推导可执行与受阻动作 | ResolvedChangeState | available/blocked action objects | resolver types、rule table | 不替 AI 项目经理选择推荐动作；只校验 `next_action` 是否可执行 |
 | readiness validator | 校验 AI 已记录的 readiness 结构、材料绑定和 concern 处置状态 | readiness record、当前材料 digest | pass/concerns/fail/stale 的机械有效性 | material/digest、schema | 不自行做语义 readiness review，不把文件齐全等同于 PASS |
@@ -478,6 +486,8 @@ pm init
 - **依据**：[requirements.md](requirements.md) R7、R12、成功标准 8/9；[architecture.md](architecture.md) §4.4、§8、§11.3、§11.4。
 
 ### Slice 4：任务契约与四维验证
+
+**实施状态**：已完成并通过固定 Markdown 记录、错放/重复/悬空引用、设计范围理由、任务字段/依赖环/完成证据、四维缺失 expected-failure、revision/checkpoint 新鲜度和完整 acceptance readiness expected-success 测试。
 
 #### I-13 内置 Markdown 契约与跨材料追溯
 

@@ -5,12 +5,17 @@ import {
   readProjectConfig,
 } from "../project/discover.js";
 import { resolveMaterialSets } from "../materials/sets.js";
+import { resolveArtifactIndex } from "../materials/markdown-contract.js";
 import { resolveConfirmations } from "../governance/confirmations.js";
 import { resolveBlockers } from "../governance/blockers.js";
+import { requiredContractDiagnostics } from "../governance/contracts.js";
 import { resolveReadiness } from "../governance/readiness.js";
 import { resolveRecoveryFacts } from "../governance/recovery.js";
 import { resolveReview } from "../governance/review.js";
 import { resolveSelfChecks } from "../governance/self-checks.js";
+import { resolveTaskContracts } from "../governance/tasks.js";
+import { resolveTraceability } from "../governance/traceability.js";
+import { resolveVerification } from "../governance/verification.js";
 import type { Diagnostic, GateName, ResolvedChangeState } from "./types.js";
 import { deriveActions, nextActionIsAvailable } from "./actions.js";
 import { validateStateInvariants } from "./invariants.js";
@@ -24,6 +29,12 @@ export async function resolveCanonicalState(input: {
   const located = await locateActiveChange(projectRoot, input.changeId);
   const state = await readChangeState(located.changeDirectory);
   const materialResult = await resolveMaterialSets(located.changeDirectory, state);
+  const artifactResult = await resolveArtifactIndex(
+    located.changeDirectory,
+    materialResult.materials,
+  );
+  const traceabilityResult = resolveTraceability(artifactResult.index);
+  const taskResult = resolveTaskContracts(artifactResult.index);
   const confirmationResult = resolveConfirmations(state, materialResult.materials);
   const readinessResult = resolveReadiness(state.readiness, materialResult.materials);
   const selfCheckResult = await resolveSelfChecks(located.changeDirectory);
@@ -37,9 +48,25 @@ export async function resolveCanonicalState(input: {
     state,
     confirmedGates,
   });
+  const verificationResult = resolveVerification({
+    index: artifactResult.index,
+    tasks: taskResult.facts,
+    state,
+    currentRevision: recoveryResult.recovery.workspace.current_revision,
+  });
   const diagnostics: Diagnostic[] = [
     ...validateStateInvariants(state, located.changeId),
     ...materialResult.diagnostics,
+    ...artifactResult.diagnostics,
+    ...traceabilityResult.diagnostics,
+    ...taskResult.diagnostics,
+    ...verificationResult.diagnostics,
+    ...requiredContractDiagnostics({
+      state,
+      traceability: traceabilityResult,
+      tasks: taskResult,
+      verification: verificationResult,
+    }),
     ...confirmationResult.diagnostics,
     ...readinessResult.diagnostics,
     ...blockerResult.diagnostics,
@@ -57,6 +84,9 @@ export async function resolveCanonicalState(input: {
       openBlockers: blockerResult.openBlockers,
       review: reviewResult.review,
       recovery: recoveryResult.recovery,
+      traceability: traceabilityResult.facts,
+      tasks: taskResult.facts,
+      verification: verificationResult.facts,
     },
     diagnostics,
   );
@@ -93,6 +123,10 @@ export async function resolveCanonicalState(input: {
     open_blockers: blockerResult.openBlockers,
     review: reviewResult.review,
     implementation: structuredClone(state.implementation),
+    artifact_index: artifactResult.index,
+    traceability: traceabilityResult.facts,
+    tasks: taskResult.facts,
+    verification: verificationResult.facts,
     available_actions: actions.available,
     blocked_actions: actions.blocked,
     next_action: {
