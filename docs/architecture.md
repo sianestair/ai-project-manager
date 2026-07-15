@@ -92,6 +92,7 @@ AI 项目经理入口
    │     │  ├─ README.md
    │     │  └─ <delivery-artifact>.md 按交付复杂度选建
    │     ├─ knowledge-update.md
+   │     ├─ knowledge-post-images/ 可选；preview 前的精确候选正文
    │     └─ knowledge.patch        可选；有知识变更时生成
    └─ archived/
       └─ <change-id>/
@@ -215,17 +216,18 @@ Change 唯一的机器可读状态文件，保存身份、当前阶段、基线�
 
 #### `knowledge-update.md`
 
-保存本次准备提升、排除或修改的候选知识。每一项必须标明：
+保存本次准备提升、排除或修改的候选知识。每项 `KNOW-*` 使用固定字段：
 
-- 类型：事实、规则或决策；长期架构现状属于事实，形成原因和取舍属于决策。
-- 目标知识文件。
-- 建议新增、修改或删除的内容。
-- 依据的需求、设计和验证证据。
-- 用户处理结果：确认、排除或要求修改。
+- `类型`：事实、规则或决策；长期架构现状属于事实，形成原因和取舍属于决策。
+- `目标`：位于 `knowledge-base/facts/`、`rules/` 或 `decisions/` 下的 `.md` 文件，且必须与类型一致。
+- `操作`：新增、替换或删除。
+- `内容来源`：新增/替换指向本 Change 的 `knowledge-post-images/<KNOW-ID>.md` 精确 post-image；删除固定为“无”。
+- `处理结果`：纳入或排除；未处理候选不能生成预览。
+- `依据`：引用本 Change 的需求、设计、验收或证据标识。
 
 即使最终没有需要提升的知识，也必须在该文件明确记录“无知识变更”并由用户确认，避免把“尚未整理”误判为“没有变化”。
 
-有知识变更时，AI 项目经理同时生成 `knowledge.patch`，作为将已确认候选内容应用到 `knowledge-base/` 的精确机器载荷。`knowledge-update.md` 负责让用户理解和选择，`knowledge.patch` 负责确定性预览和应用；知识确认同时绑定二者的摘要。如果目标知识在确认后发生变化导致补丁不能原样应用，必须重新生成预览并重新确认。没有知识变更时不创建该补丁。
+有知识变更时，AI 项目经理先把新增/替换候选的完整目标正文放入 `knowledge-post-images/`；该目录只是生成输入，不属于 knowledge material set，也不是另一份项目真相。工具把候选和这些精确正文编译为 `knowledge.patch`，作为将已确认候选内容应用到 `knowledge-base/` 的版本化机器载荷。envelope 保存 `schema_version`、Change id、candidate digest，以及按规范路径排序的 `KNOW-*`、操作、before/after digest 和完整 before/after image。`knowledge-update.md` 负责让用户理解和选择，`knowledge.patch` 负责确定性预览和应用；知识确认同时绑定二者的摘要。确认后应用只依赖补丁内载荷，不再读取 `knowledge-post-images/`。如果目标知识在确认后发生变化导致补丁不能原样应用，必须重新生成预览并重新确认。没有知识变更时不创建该补丁。
 
 ### 3.5 跨材料追溯约定
 
@@ -254,10 +256,12 @@ Change 唯一的机器可读状态文件，保存身份、当前阶段、基线�
 归档时将完整 Change 目录从 `changes/active/` 移到 `changes/archived/`，不重新整理成另一种格式。归档后的 `change.yaml` 增加终态信息：
 
 - `phase: archived`
-- 归档时间。
-- 最终实现版本或 Git 提交。
-- 已应用知识文件及摘要。
-- 验收和知识确认记录。
+- `status: completed`
+- `archive.archived_at`：归档时间。
+- `archive.final_revision`：最终实现版本或 Git 提交，必须等于终态 implementation final revision。
+- `archive.applied_files`：已应用且仍存在的知识文件及摘要，必须等于终态 knowledge promotion 记录。
+- `archive.confirmation_revisions`：requirements、design、acceptance、knowledge 四个门的最终确认 revision。
+- `next_action.action: inspect_archive`：归档后唯一可执行动作。
 
 归档目录默认只读。修正文档错误需要新建 Change，不能直接改写历史证据。新 Change 的上下文发现和恢复流程都不得默认读取 `changes/archived/`。
 
@@ -579,9 +583,9 @@ flowchart LR
 1. AI 项目经理整理 `knowledge-update.md` 中的候选项和用户可理解的建议措辞。
 2. 工具根据最终候选项生成 `knowledge.patch`，记录候选、补丁、目标 `before_digest` 和预期 `after_digest`，并展示精确变更预览。
 3. 用户确认同时绑定 `knowledge-update.md` 和 `knowledge.patch`；无知识变更时只绑定前者。
-4. 工具先校验全部目标的前置条件，再以不可部分成功的方式应用已确认补丁，并校验知识索引、目标文件和全部 `after_digest`。
-5. 把应用结果写入 `change.yaml`。
-6. 执行归档检查并移动完整 Change 目录。
+4. 工具先校验全部目标的前置条件，再在 Change 的 `.pm-transaction/` 中暂存完整 before/after image 和 journal；journal 是机械恢复标记，不是业务状态权威。
+5. 工具以不可部分成功的方式应用已确认补丁并校验全部 `after_digest`，然后把 `applied_files` 和 verified 状态写入 `change.yaml`；中断后只允许 `pm knowledge recover --strategy commit|rollback` 完成已确认载荷或恢复全部 before-image，第三方内容冲突不得覆盖。
+6. `pm archive check` 复用 resolver 校验全部终态门；`pm archive apply` 先写可恢复 marker，再在同一项目文件系统内 rename 完整目录并写入 archived 终态。终态已写入后的清理失败只能幂等完成，不能把终态目录移回 active。
 
 `pm validate`、`pm knowledge apply` 和 `pm archive apply` 必须复用同一个 canonical state resolver 和门判断实现。任何前置条件、应用结果或归档门失败都必须返回非零退出码，不能由不同命令产生不同结论。
 
@@ -704,7 +708,8 @@ src/
 │  ├─ manifest.yaml
 │  ├─ schemas/
 │  │  ├─ project.schema.json
-│  │  └─ change.schema.json
+│  │  ├─ change.schema.json
+│  │  └─ knowledge-patch.schema.json
 │  ├─ skills/
 │  │  └─ ai-project-manager/
 │  │     └─ SKILL.md
@@ -719,7 +724,9 @@ src/
 │     │  │  ├─ confirm/index.ts
 │     │  │  ├─ invalidate/index.ts
 │     │  │  ├─ status/index.ts
-│     │  │  └─ validate/index.ts
+│     │  │  ├─ validate/index.ts
+│     │  │  ├─ knowledge/{preview,apply,recover}/index.ts
+│     │  │  └─ archive/{check,apply}/index.ts
 │     │  ├─ output.ts
 │     │  └─ errors.ts
 │     ├─ governance/
@@ -736,6 +743,10 @@ src/
 │     │  └─ verification.ts
 │     ├─ materials/
 │     │  └─ markdown-contract.ts
+│     ├─ knowledge/
+│     │  ├─ candidates.ts
+│     │  ├─ patch.ts
+│     │  └─ paths.ts
 │     ├─ state/
 │     │  ├─ actions.ts
 │     │  └─ resolver.ts
@@ -819,6 +830,7 @@ Codex 适配器只增加一个安装入口，不复制第二份 Skill 正文。
 | `pm confirm <gate> <id>` | 在已有明确确认且门前自检满足后，将材料摘要绑定到门记录 |
 | `pm invalidate <stage> <id> --reason <reason>` | 保留历史并使调用者明确指定的受影响阶段及下游门失效 |
 | `pm knowledge preview/apply <id>` | 生成或原子应用 `knowledge.patch`，并校验候选、补丁及目标 before/after digest |
+| `pm knowledge recover <id> --strategy commit\|rollback` | 对中断的知识事务完成已确认 post-image 或恢复全部 before-image |
 | `pm archive check/apply <id>` | 使用同一 resolver 检查终态门并原样移动 Change 目录 |
 
 `pm confirm` 不能自行决定用户是否同意；调用者必须提供确认人、摘要和证据说明。`pm knowledge apply` 和 `pm archive apply` 必须拒绝未满足的门，不能用 `--force` 绕过。

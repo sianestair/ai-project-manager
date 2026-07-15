@@ -141,6 +141,9 @@ export async function invalidateChange(
       traceability: resolved.traceability,
       tasks: resolved.tasks,
       verification: resolved.verification,
+      knowledgePromotion: resolved.knowledge_promotion,
+      transaction: resolved.transaction,
+      archiveReadiness: resolved.archive_readiness,
     },
     predictedDiagnostics,
   );

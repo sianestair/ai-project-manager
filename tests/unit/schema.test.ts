@@ -2,8 +2,13 @@ import assert from "node:assert/strict";
 import { test } from "vite-plus/test";
 
 import { PmError } from "../../src/core/runtime/cli/errors.js";
+import { digestText } from "../../src/core/runtime/materials/digest.js";
 import { createInitialChangeState } from "../../src/core/runtime/project/templates.js";
-import { validateChangeState, validateProjectConfig } from "../../src/core/runtime/state/schema.js";
+import {
+  validateChangeState,
+  validateKnowledgePatch,
+  validateProjectConfig,
+} from "../../src/core/runtime/state/schema.js";
 
 test("project schema accepts the fixed first-version contract", async () => {
   const project = await validateProjectConfig({
@@ -124,5 +129,50 @@ test("change schema fixes blocker responsibility and review outcome enums", asyn
       error instanceof PmError &&
       error.code === "change_schema_invalid" &&
       error.details.length >= 2,
+  );
+});
+
+test("knowledge patch schema accepts a versioned exact-image envelope", async () => {
+  const afterImage = "# Durable rule\n\nApply all targets atomically.\n";
+  const patch = await validateKnowledgePatch({
+    schema_version: 1,
+    change_id: "wallet-login",
+    candidate_digest: digestText("knowledge candidates"),
+    targets: [
+      {
+        knowledge_id: "KNOW-001",
+        path: "knowledge-base/rules/wallet/login.md",
+        operation: "create",
+        before_digest: "absent",
+        after_digest: digestText(afterImage),
+        before_image: null,
+        after_image: afterImage,
+      },
+    ],
+  });
+
+  assert.equal(patch.schema_version, 1);
+  assert.equal(patch.targets[0]?.operation, "create");
+});
+
+test("knowledge patch schema rejects unknown operations and incomplete targets", async () => {
+  await assert.rejects(
+    validateKnowledgePatch({
+      schema_version: 1,
+      change_id: "wallet-login",
+      candidate_digest: digestText("knowledge candidates"),
+      targets: [
+        {
+          knowledge_id: "KNOW-001",
+          path: "knowledge-base/rules/wallet/login.md",
+          operation: "merge",
+          before_digest: "absent",
+        },
+      ],
+    }),
+    (error: unknown) =>
+      error instanceof PmError &&
+      error.code === "knowledge_patch_schema_invalid" &&
+      error.exitCode === 3,
   );
 });

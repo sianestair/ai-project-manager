@@ -9,7 +9,7 @@ Agent 支持依据：[agent-support-research.md](agent-support-research.md)
 方法调研依据：[agentic-development-frameworks-research.md](agentic-development-frameworks-research.md)
 第一阶段目标平台：Codex
 
-实施进度：Slice 1（I-01～I-06）、Slice 2（I-07～I-09）、Slice 3（I-10～I-12）和 Slice 4（I-13～I-15）均已完成并验证；Vite+、`src/`、单一自包含 `dist/`、CAC 命令目录、确认材料 digest、readiness、blocker/review、回退恢复、固定 Markdown 契约、任务依赖图与四维证据 readiness 已形成可运行基线；下一切片为知识补丁三方 digest、原子应用和归档。
+实施进度：Slice 1（I-01～I-06）、Slice 2（I-07～I-09）、Slice 3（I-10～I-12）、Slice 4（I-13～I-15）和 Slice 5（I-16～I-18）均已完成并验证；Vite+、`src/`、单一自包含 `dist/`、CAC 命令目录、确认材料 digest、readiness、blocker/review、回退恢复、固定 Markdown 契约、任务依赖图、四维证据 readiness、知识三方 digest、可恢复原子应用与归档终态已形成可运行基线；下一切片为通用 Skill、Codex 适配器与最终验收。
 
 ## 1. 计划目标与不可变边界
 
@@ -43,7 +43,7 @@ Agent 支持依据：[agent-support-research.md](agent-support-research.md)
 | 测试 | Vite+ `vp test`（Vitest）运行单元测试；CLI 与发布验收继续使用真实子进程和仓库外临时目录 | 纯函数获得快速反馈，发布测试仍覆盖真实 `dist/bin/pm.js`，不把内部 mock 当作完成证据 | 完成声明只接受新近执行的检查、测试、bundle 和独立发布目录证据 |
 | CLI 框架 | CAC 7 只用于命令注册、argv 解析、参数校验与帮助生成；命令入口按 `commands/<command>/index.ts` 组织 | 后续 confirm、invalidate、blocker、knowledge、archive 会持续扩展命令面；集中 switch 与手写帮助不再适合作为稳定入口 | CAC 只能存在于 CLI 边界；command action 只做输入适配、operation 调用和输出，不承担状态门或业务判断 |
 | 运行时依赖 | `yaml` 解析/写入 YAML；`ajv` 校验 JSON Schema；`cac` 组织 CLI；构建时按入口依赖图将实际使用代码和传递依赖内联到 `pm.js` | YAML、JSON Schema 与 CLI 都是已确认发布入口的组成部分；自包含 bundle 避免假设目标 Agent 已安装依赖或能访问 registry | 发布 `package.json` 不声明第三方运行依赖；新增裸模块 import 必须在构建或发布检查中失败；Node 24 是唯一外部运行时 |
-| 质量检查 | Vite+ 统一提供 `vp check`、`vp test`、`vp pack`；综合发布门由 `vp run verify` 串联发布内容和独立运行检查 | 类型、格式、lint、行为和发布内容共用一套本地/CI 入口 | 不为 Codex 维护第二套验证逻辑；构建工具配置不能改变核心状态语义 |
+| 质量检查 | Vite+ 统一提供 `vp check`、`vp test`、`vp pack`；综合发布门由 `pnpm run verify` 串联发布内容和独立运行检查 | 类型、格式、lint、行为和发布内容共用一套本地/CI 入口 | 不为 Codex 维护第二套验证逻辑；构建工具配置不能改变核心状态语义 |
 
 版本依据：
 
@@ -130,6 +130,7 @@ src/
     schemas/
       project.schema.json
       change.schema.json
+      knowledge-patch.schema.json
     skills/
       ai-project-manager/
         SKILL.md
@@ -146,6 +147,11 @@ src/
           validate/index.ts
           confirm/index.ts
           invalidate/index.ts
+          knowledge/preview/index.ts
+          knowledge/apply/index.ts
+          knowledge/recover/index.ts
+          archive/check/index.ts
+          archive/apply/index.ts
       project/
         discover.ts
         init.ts
@@ -156,6 +162,10 @@ src/
         sets.ts
         markdown-contract.ts
         digest.ts
+      knowledge/
+        candidates.ts
+        patch.ts
+        paths.ts
       state/
         types.ts
         resolver.ts
@@ -174,6 +184,8 @@ src/
         tasks.ts
         traceability.ts
         verification.ts
+        knowledge.ts
+        archive.ts
       operations/
         confirm.ts
         invalidate.ts
@@ -212,6 +224,7 @@ dist/
     schemas/
       project.schema.json
       change.schema.json
+      knowledge-patch.schema.json
     skills/
       ai-project-manager/
         SKILL.md
@@ -229,6 +242,7 @@ dist/
 | `src/core/manifest.yaml` | 声明核心版本、schema、Skill、CLI 入口、模板和适配器投影资产 | 仓库内公共资产路径与版本 | `dist/core/manifest.yaml` 与构建/适配器生成的单一资产清单 | 无运行时模块 | 不描述某个项目或 Change，不决定流程阶段，不复制 Skill 正文 |
 | project schema | 校验 `PROJECT.yaml` 的契约版本与项目身份 | 解析后的 YAML | schema errors 或已验证 ProjectConfig | Ajv | 不判断项目名称是否“合适”，不保存当前阶段或当前 Change |
 | change schema | 校验 `change.yaml` 的字段、枚举、基本结构与版本 | 解析后的 YAML | schema errors 或已验证 ChangeState | Ajv | 不判断需求、设计、证据或确认是否正确 |
+| knowledge patch schema | 校验版本化 envelope、KNOW id、操作、路径和 before/after image 基本结构 | 解析后的 `knowledge.patch` JSON | schema errors 或已验证 KnowledgePatchEnvelope | Ajv、语义 validator | 不判断候选是否值得长期保留，不替用户确认知识 |
 | project discovery | 定位项目根、Git revision、active Change 与固定目录 | cwd、显式 `--project`/change id、文件系统 | ProjectPaths、GitSnapshot、ChangeLocation | path/fs ports | 不根据 archived Change 或聊天猜测当前状态；多个 Change 时不自动合并 |
 | material set resolver | 展开 required/included，核对 README 索引与路径安全 | ChangeState、Change 目录、Markdown 索引 | 规范化 MaterialSet、缺失/多余/越界错误 | paths、Markdown contract parser | 不判断材料内容质量，不自动把未登记文件加入确认集合 |
 | digest engine | 计算文件、材料集合、工程范围和补丁摘要 | 规范化路径与内容 | SHA-256 digest、范围清单、drift facts | crypto、Git/file walker | 不证明内容正确，不把无关整体目录变化当成自动门 |
@@ -242,7 +256,7 @@ dist/
 | blocker/review invariants | 校验 blocker 必填字段、状态联动、迭代上限和 revision | ChangeState、resolved review facts | diagnostics、allowed recovery actions | state rules | 不判断某个缺陷是否应接受，不自动延长 `max_iterations` |
 | confirmation operation | 在明确调用元数据存在时绑定当前材料集合摘要并追加 revision | gate、confirmed_by、summary、evidence、resolved state | 新 confirmation、phase/next action/history 更新 | resolver、digest、atomic YAML write | 不根据沉默、对话继续或测试通过推断确认；不替用户确认需求/验收/知识 |
 | invalidation operation | 按调用者给出的最早受影响阶段失效当前及下游门并保留历史 | stage、reason、resolved state | invalidated confirmations、回退后的 phase/next action/history | state dependency map | 不判断最早受影响阶段；不得删除代码、材料或旧确认记录 |
-| knowledge preview | 把已整理候选转换为版本化精确载荷并计算三方 digest | `knowledge-update.md`、目标知识文件、候选选择 | `knowledge.patch`、预览、targets | path safety、digest | 不决定哪些内容是长期知识，不替用户确认候选 |
+| knowledge preview | 把已整理候选转换为版本化精确载荷并计算三方 digest | `knowledge-update.md`、`knowledge-post-images/`、目标知识文件、候选选择 | `knowledge.patch`、预览、targets | path safety、digest | 不决定哪些内容是长期知识，不替用户确认候选；post-image 源文件不成为独立确认材料 |
 | transaction/knowledge apply | 预检全部目标，暂存 post-image，故障恢复，全部提交或全部回滚，再验证 after digest | 已确认 patch、目标 current state | 应用结果、transaction evidence、applied_files | resolver、digest、atomic fs ops | 不合并冲突、不使用 `--force`、不在 before mismatch 时“尽量应用” |
 | archive operation | 复用 resolver 检查终态，写入终态引用并同文件系统移动完整目录 | archive-ready Change、Git/knowledge result | archived snapshot、非零失败或成功结果 | resolver、transaction | 不增加重复用户确认，不读取 archived Change 反推当前知识 |
 | CLI/presentation | 解析命令、映射 exit code、渲染 human/JSON 输出 | argv、runtime services | stdout/stderr/exit code | 所有 operation ports | 不包含第二套门逻辑，不因 human 输出便利改变 resolver 结论 |
@@ -356,7 +370,7 @@ pm init
 - **Produces**：私有开发 `package.json`、lockfile、TypeScript/Vite+ 配置、check/test/pack/verify 入口、`src/core/manifest.yaml`、自包含 `dist/` 和最小 CLI version 入口。
 - **预计修改范围**：仓库根配置、`vite.config.ts`、`scripts/`、`src/core/manifest.yaml`、`src/core/runtime/cli/`、发布内容测试。
 - **依赖任务**：LT-01、LT-02、LT-05 确认；无代码任务依赖。
-- **验证方法与预期结果**：`vp run verify` 通过；仓库外无 `node_modules` 时可直接运行 `dist/bin/pm.js`；`npm pack ./dist` 只含允许资产；`pm --version` 返回核心版本且不读取源码路径。
+- **验证方法与预期结果**：`pnpm run verify` 通过；仓库外无 `node_modules` 时可直接运行 `dist/bin/pm.js`；`npm pack ./dist` 只含允许资产；`pm --version` 返回核心版本且不读取源码路径。
 - **依据**：[requirements.md](requirements.md) R8、R9；[architecture.md](architecture.md) §9、§10.2、§10.3、已确认基线 9/10；[agentic-development-frameworks-research.md](agentic-development-frameworks-research.md) I-08。
 
 #### I-02 project/change schemas 与类型边界
@@ -521,7 +535,11 @@ pm init
 
 ### Slice 5：知识三方 digest、原子应用与归档
 
+**实施状态**：已完成并通过 create/replace/delete 字节稳定 patch、候选未处理/重复/越界失败、before/after 冲突、每个目标边界和状态写入边界恢复、无知识变更、跨设备/目标冲突、归档 marker/rename/终态恢复、真实 `dist` CLI 闭环与 archived validate 测试。
+
 #### I-16 `pm knowledge preview` 与 patch envelope
+
+**实施状态**：已完成；`knowledge.patch` schema、固定候选字段、Change 内精确 post-image、路径约束、稳定 JSON/diff 和可重新生成规则均已落地。
 
 - **目标**：把用户可理解的候选选择编译为版本化、路径安全、可重复生成的精确 patch，并计算 candidate/patch/before/after digest。
 - **Consumes**：`knowledge-update.md`、当前目标知识、候选处理结果。
@@ -533,6 +551,8 @@ pm init
 
 #### I-17 `pm knowledge apply`、冲突与故障恢复
 
+**实施状态**：已完成；应用前全目标预检、`.pm-transaction` journal、before/after 暂存、commit/rollback 恢复、第三方值保护和 after 校验均已落地。
+
 - **目标**：实现全部前置条件预检、post-image 暂存、不可部分成功提交、after 校验和中断恢复。
 - **Consumes**：已确认 candidate/patch digests、current targets、before/after digests、transaction port。
 - **Produces**：全部应用或全部未应用的知识树、applied_files、verified 状态、事务/冲突证据。
@@ -542,6 +562,8 @@ pm init
 - **依据**：[requirements.md](requirements.md) R7、R10、R12；[architecture.md](architecture.md) §4.4、§5.4、§12；[agentic-development-frameworks-research.md](agentic-development-frameworks-research.md) I-07。
 
 #### I-18 `pm archive check/apply`
+
+**实施状态**：已完成；终态门、archive marker、同文件系统 rename、失败回滚/幂等恢复、archived-only validate 和 current-input 隔离均已落地。
 
 - **目标**：复用 canonical resolver 验证全部终态门，记录最终引用并把完整 Change 从 active 原样移动到 archived。
 - **Consumes**：requirements/design/acceptance/knowledge 有效确认、readiness、verified implementation、verified knowledge、无 blocker/review 超限、revision/checkpoint。
@@ -637,6 +659,7 @@ I-13～I-15 可在 I-10～I-12 稳定后部分并行准备夹具，但不得在 
 范围：
 
 - project/change schema 的合法与非法样例。
+- knowledge patch schema、操作语义、图片 digest、目标顺序与唯一性。
 - phase/gate/readiness/blocker/review/knowledge 枚举和交叉不变量。
 - 路径规范化、越界拒绝、文本/文件集合/range digest。
 - material set 展开、confirmation freshness、readiness stale。
@@ -653,7 +676,7 @@ I-13～I-15 可在 I-10～I-12 稳定后部分并行准备夹具，但不得在 
 - `pm change start` 创建/重复/非法 id。
 - `status --json` 的稳定结构。
 - `validate` 的成功、schema 失败、材料失败和 next_action 失败。
-- confirm/invalidate/knowledge/archive 的参数、输出和 exit code。
+- confirm/invalidate/knowledge/archive 的参数、输出和 exit code；知识确认到 archived validate 必须通过真实 `dist/bin/pm.js` 闭环。
 
 预期：测试产品实际发布入口，不绕过 CLI 直接调用内部 operation。
 
@@ -721,7 +744,7 @@ I-13～I-15 可在 I-10～I-12 稳定后部分并行准备夹具，但不得在 
 计划中的最终入口为：
 
 ~~~text
-vp run verify
+pnpm run verify
   = vp check（typecheck + lint + format check）
   + vp pack
   + unit
@@ -745,7 +768,7 @@ Codex 真实项目验收单独保留人工确认证据，不伪装成完全自�
 | M5 知识与归档 | preview/apply/recover/archive | 多目标冲突零部分写入；终态原样归档；新 Change 不读历史 |
 | M6 Codex 完整支持 | 通用 Skill、Codex adapter、真实 E2E | 安装、入口、能力映射、两次中断和钱包登录闭环全部有证据 |
 
-每个里程碑结束都必须运行当时已存在的全部 `vp run verify` 子集；不能为了进入下一切片而临时放宽已有 expected-failure。
+每个里程碑结束都必须运行当时已存在的全部 `pnpm run verify` 子集；不能为了进入下一切片而临时放宽已有 expected-failure。
 
 ## 10. 第一版明确非目标
 

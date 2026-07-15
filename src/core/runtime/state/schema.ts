@@ -1,9 +1,10 @@
 import { Ajv, type ErrorObject, type ValidateFunction } from "ajv";
 
 import changeSchema from "../../schemas/change.schema.json" with { type: "json" };
+import knowledgePatchSchema from "../../schemas/knowledge-patch.schema.json" with { type: "json" };
 import projectSchema from "../../schemas/project.schema.json" with { type: "json" };
 import { EXIT_CODES, PmError } from "../cli/errors.js";
-import type { ChangeState, ProjectConfig } from "./types.js";
+import type { ChangeState, KnowledgePatchEnvelope, ProjectConfig } from "./types.js";
 
 const ajv = new Ajv({
   allErrors: true,
@@ -12,6 +13,7 @@ const ajv = new Ajv({
 
 let projectValidator: ValidateFunction | undefined;
 let changeValidator: ValidateFunction | undefined;
+let knowledgePatchValidator: ValidateFunction | undefined;
 
 function formatSchemaErrors(errors: ErrorObject[] | null | undefined): string[] {
   return (errors ?? []).map((error) => {
@@ -20,22 +22,46 @@ function formatSchemaErrors(errors: ErrorObject[] | null | undefined): string[] 
   });
 }
 
-async function loadValidator(name: "project" | "change"): Promise<ValidateFunction> {
-  const existing = name === "project" ? projectValidator : changeValidator;
+async function loadValidator(
+  name: "project" | "change" | "knowledge_patch",
+): Promise<ValidateFunction> {
+  const existing =
+    name === "project"
+      ? projectValidator
+      : name === "change"
+        ? changeValidator
+        : knowledgePatchValidator;
   if (existing !== undefined) {
     return existing;
   }
 
-  const schema = name === "project" ? projectSchema : changeSchema;
+  const schema =
+    name === "project" ? projectSchema : name === "change" ? changeSchema : knowledgePatchSchema;
   const validator = ajv.compile(schema);
 
   if (name === "project") {
     projectValidator = validator;
-  } else {
+  } else if (name === "change") {
     changeValidator = validator;
+  } else {
+    knowledgePatchValidator = validator;
   }
 
   return validator;
+}
+
+export async function validateKnowledgePatch(value: unknown): Promise<KnowledgePatchEnvelope> {
+  const validate = await loadValidator("knowledge_patch");
+  if (!validate(value)) {
+    throw new PmError(
+      "knowledge_patch_schema_invalid",
+      "knowledge.patch does not satisfy knowledge-patch.schema.json.",
+      EXIT_CODES.validation,
+      formatSchemaErrors(validate.errors),
+    );
+  }
+
+  return value as KnowledgePatchEnvelope;
 }
 
 export async function validateProjectConfig(value: unknown): Promise<ProjectConfig> {

@@ -34,6 +34,8 @@ export type VerificationDimension =
   | "correctness"
   | "coherence"
   | "engineering_quality";
+export type KnowledgeOperation = "create" | "replace" | "delete";
+export type ChangeLocation = "active" | "archived";
 
 export interface ProjectConfig {
   schema_version: 1;
@@ -146,6 +148,12 @@ export interface ChangeState {
       after_digest: string;
     }>;
     applied_files: ArtifactDigest[];
+  };
+  archive?: {
+    archived_at: string;
+    final_revision: string;
+    applied_files: ArtifactDigest[];
+    confirmation_revisions: Record<GateName, number>;
   };
   blockers: Blocker[];
   review: {
@@ -329,6 +337,49 @@ export interface VerificationFacts {
   ready_for_acceptance: boolean;
 }
 
+export interface KnowledgePatchTarget {
+  knowledge_id: string;
+  path: string;
+  operation: KnowledgeOperation;
+  before_digest: string;
+  after_digest: string;
+  before_image: string | null;
+  after_image: string | null;
+}
+
+export interface KnowledgePatchEnvelope {
+  schema_version: 1;
+  change_id: string;
+  candidate_digest: string;
+  targets: KnowledgePatchTarget[];
+}
+
+export interface KnowledgePromotionFacts {
+  status: ChangeState["knowledge_promotion"]["status"];
+  candidate_current: boolean;
+  patch_current: boolean;
+  targets_current: boolean;
+  no_change: boolean;
+  ready_for_confirmation: boolean;
+  ready_to_apply: boolean;
+  verified: boolean;
+  conflicts: string[];
+}
+
+export interface TransactionFacts {
+  status: "none" | "pending" | "invalid";
+  operation: "knowledge_apply" | null;
+  path: string | null;
+  completed_targets: number;
+  total_targets: number;
+  recovery_actions: Array<"commit" | "rollback">;
+}
+
+export interface ArchiveReadinessFacts {
+  ready: boolean;
+  unmet_conditions: string[];
+}
+
 export interface AvailableAction extends NextAction {
   id: string;
   description: string;
@@ -354,6 +405,7 @@ export interface ResolvedChangeState {
     phase: Phase;
     status: ChangeStatus;
     project_revision: string | null;
+    location: ChangeLocation;
   };
   materials: Record<MaterialSetName, ResolvedMaterialSet>;
   gates: Record<GateName, ResolvedGate>;
@@ -368,6 +420,9 @@ export interface ResolvedChangeState {
   traceability: TraceabilityFacts;
   tasks: TaskContractFacts;
   verification: VerificationFacts;
+  knowledge_promotion: KnowledgePromotionFacts;
+  transaction: TransactionFacts;
+  archive_readiness: ArchiveReadinessFacts;
   available_actions: AvailableAction[];
   blocked_actions: BlockedAction[];
   next_action: NextAction & {

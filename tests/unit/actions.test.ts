@@ -136,6 +136,29 @@ function actionContext(state: ChangeState): ActionContext {
       traceability_complete: false,
       ready_for_acceptance: false,
     },
+    knowledgePromotion: {
+      status: "not_started",
+      candidate_current: false,
+      patch_current: false,
+      targets_current: false,
+      no_change: false,
+      ready_for_confirmation: false,
+      ready_to_apply: false,
+      verified: false,
+      conflicts: [],
+    },
+    transaction: {
+      status: "none",
+      operation: null,
+      path: null,
+      completed_targets: 0,
+      total_targets: 0,
+      recovery_actions: [],
+    },
+    archiveReadiness: {
+      ready: false,
+      unmet_conditions: ["phase_not_archive_ready"],
+    },
   };
 }
 

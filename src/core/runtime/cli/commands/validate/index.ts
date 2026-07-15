@@ -9,7 +9,7 @@ export function registerValidateCommand(cli: CAC): void {
   cli
     .command("validate [id]", "Validate canonical Change state")
     .action(async (changeId: string | undefined, rawOptions: unknown) => {
-      const { state, json } = await resolveReadCommand(changeId, rawOptions);
+      const { state, json } = await resolveReadCommand(changeId, rawOptions, true);
       const result = validationResult(state);
 
       if (json) {

@@ -13,5 +13,6 @@ runtime:
 schemas:
   project: core/schemas/project.schema.json
   change: core/schemas/change.schema.json
+  knowledge_patch: core/schemas/knowledge-patch.schema.json
 skills: []
 adapters: []

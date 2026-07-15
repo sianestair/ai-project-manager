@@ -25,6 +25,26 @@ function checkGlobalOptions(cli: CAC): void {
   }
 }
 
+const NESTED_COMMANDS = new Set([
+  "archive apply",
+  "archive check",
+  "knowledge apply",
+  "knowledge preview",
+  "knowledge recover",
+]);
+
+function normalizeNestedCommand(argv: readonly string[]): string[] {
+  const nested = argv.slice(0, 2).join(" ");
+  return NESTED_COMMANDS.has(nested) ? [nested.replace(" ", "-"), ...argv.slice(2)] : [...argv];
+}
+
+function displayNestedCommands(body: string): string {
+  return [...NESTED_COMMANDS].reduce(
+    (current, nested) => current.replaceAll("pm " + nested.replace(" ", "-"), "pm " + nested),
+    body,
+  );
+}
+
 export function createCli(): CAC {
   const cli = cac("pm");
 
@@ -46,7 +66,7 @@ export function createCli(): CAC {
       }
 
       if (section.title !== "Commands") {
-        return section;
+        return { ...section, body: displayNestedCommands(section.body) };
       }
 
       const commandRows = cli.commands.map((command) => ({
@@ -68,9 +88,10 @@ export function createCli(): CAC {
 export async function runCli(argv: readonly string[]): Promise<number> {
   const cli = createCli();
   let parsed: ReturnType<CAC["parse"]>;
+  const normalizedArgv = normalizeNestedCommand(argv);
 
   try {
-    parsed = cli.parse([process.execPath, "pm", ...argv], { run: false });
+    parsed = cli.parse([process.execPath, "pm", ...normalizedArgv], { run: false });
   } catch (error) {
     rethrowCliError(error);
   }

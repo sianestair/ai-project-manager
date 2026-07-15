@@ -223,6 +223,30 @@
         }
       }
     },
+    "archive": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["archived_at", "final_revision", "applied_files", "confirmation_revisions"],
+      "properties": {
+        "archived_at": { "$ref": "#/definitions/timestamp" },
+        "final_revision": { "type": "string", "minLength": 1 },
+        "applied_files": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/artifactDigest" }
+        },
+        "confirmation_revisions": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["requirements", "design", "acceptance", "knowledge"],
+          "properties": {
+            "requirements": { "type": "integer", "minimum": 1 },
+            "design": { "type": "integer", "minimum": 1 },
+            "acceptance": { "type": "integer", "minimum": 1 },
+            "knowledge": { "type": "integer", "minimum": 1 }
+          }
+        }
+      }
+    },
     "blockers": {
       "type": "array",
       "items": {

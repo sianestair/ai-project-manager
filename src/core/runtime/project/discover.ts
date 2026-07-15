@@ -69,6 +69,66 @@ export async function listActiveChangeIds(projectRoot: string): Promise<string[]
     .sort();
 }
 
+export async function listArchivedChangeIds(projectRoot: string): Promise<string[]> {
+  const archivedRoot = join(projectRoot, "changes", "archived");
+  let entries;
+  try {
+    entries = await readdir(archivedRoot, { withFileTypes: true });
+  } catch {
+    return [];
+  }
+  return entries
+    .filter((entry) => entry.isDirectory() && !entry.name.startsWith("."))
+    .map((entry) => entry.name)
+    .sort();
+}
+
+export async function locateChangeForResolution(
+  projectRoot: string,
+  requestedId: string | undefined,
+  allowArchived: boolean,
+): Promise<{
+  changeId: string;
+  changeDirectory: string;
+  location: "active" | "archived";
+}> {
+  if (requestedId === undefined || !allowArchived) {
+    const active = await locateActiveChange(projectRoot, requestedId);
+    return { ...active, location: "active" };
+  }
+
+  const [activeIds, archivedIds] = await Promise.all([
+    listActiveChangeIds(projectRoot),
+    listArchivedChangeIds(projectRoot),
+  ]);
+  if (activeIds.includes(requestedId) && archivedIds.includes(requestedId)) {
+    throw new PmError(
+      "change_location_conflict",
+      "Change id exists in both active and archived directories: " + requestedId,
+      EXIT_CODES.conflict,
+    );
+  }
+  if (activeIds.includes(requestedId)) {
+    return {
+      changeId: requestedId,
+      changeDirectory: join(projectRoot, "changes", "active", requestedId),
+      location: "active",
+    };
+  }
+  if (archivedIds.includes(requestedId)) {
+    return {
+      changeId: requestedId,
+      changeDirectory: join(projectRoot, "changes", "archived", requestedId),
+      location: "archived",
+    };
+  }
+  throw new PmError(
+    "change_not_found",
+    "Change was not found in active or archived state: " + requestedId,
+    EXIT_CODES.usage,
+  );
+}
+
 export async function locateActiveChange(
   projectRoot: string,
   requestedId?: string,

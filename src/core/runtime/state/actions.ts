@@ -1,5 +1,6 @@
 import type {
   AvailableAction,
+  ArchiveReadinessFacts,
   Blocker,
   BlockedAction,
   ChangeState,
@@ -7,6 +8,7 @@ import type {
   Diagnostic,
   GateName,
   MaterialSetName,
+  KnowledgePromotionFacts,
   NextAction,
   ResolvedGate,
   ResolvedMaterialSet,
@@ -16,6 +18,7 @@ import type {
   SelfCheckFact,
   TaskContractFacts,
   TraceabilityFacts,
+  TransactionFacts,
   VerificationFacts,
 } from "./types.js";
 
@@ -37,6 +40,9 @@ export interface ActionContext {
   traceability: TraceabilityFacts;
   tasks: TaskContractFacts;
   verification: VerificationFacts;
+  knowledgePromotion: KnowledgePromotionFacts;
+  transaction: TransactionFacts;
+  archiveReadiness: ArchiveReadinessFacts;
 }
 
 const ACTION_CATALOG: Record<string, CatalogEntry> = {
@@ -125,6 +131,11 @@ const ACTION_CATALOG: Record<string, CatalogEntry> = {
     description: "整理候选项目知识",
     inputs: ["knowledge-update.md"],
   },
+  preview_knowledge: {
+    owner: "ai_project_manager",
+    description: "将已处理候选编译为精确知识补丁和预览",
+    inputs: ["knowledge-update.md"],
+  },
   request_knowledge_confirmation: {
     owner: "ai_project_manager",
     description: "提交候选知识和补丁预览",
@@ -143,6 +154,16 @@ const ACTION_CATALOG: Record<string, CatalogEntry> = {
   archive: {
     owner: "ai_project_manager",
     description: "应用终态检查并归档 Change",
+    inputs: ["change.yaml"],
+  },
+  check_archive: {
+    owner: "ai_project_manager",
+    description: "检查全部终态门和归档前置条件",
+    inputs: ["change.yaml"],
+  },
+  inspect_archive: {
+    owner: "ai_project_manager",
+    description: "读取已归档 Change 的终态证据",
     inputs: ["change.yaml"],
   },
   record_blocker: {
@@ -184,6 +205,11 @@ const ACTION_CATALOG: Record<string, CatalogEntry> = {
     owner: "ai_project_manager",
     description: "重新评估已登记依赖或实施检查点漂移",
     inputs: ["change.yaml"],
+  },
+  recover_transaction: {
+    owner: "ai_project_manager",
+    description: "完成或回滚中断的知识事务",
+    inputs: [".pm-transaction/transaction.json"],
   },
 };
 
@@ -339,6 +365,10 @@ export function deriveActions(
   const hasFatalErrors = diagnostics.some(
     (item) => item.severity === "error" && !RECOVERABLE_GATE_DIAGNOSTICS.has(item.code),
   );
+  if (state.status === "completed" && state.phase === "archived" && !hasFatalErrors) {
+    addAvailable(availableAction("inspect_archive"));
+    return { available, blocked };
+  }
   if (hasFatalErrors || state.status === "completed") {
     blockWorkflowProgress(
       "state_validation_failed",
@@ -352,6 +382,16 @@ export function deriveActions(
   const designConfirmed = context.gates.design.valid;
   const acceptanceConfirmed = context.gates.acceptance.valid;
   const knowledgeConfirmed = context.gates.knowledge.valid;
+
+  if (context.transaction.status === "pending") {
+    addAvailable(availableAction("recover_transaction"));
+    blockWorkflowProgress(
+      "transaction_recovery_required",
+      "ai_project_manager",
+      "Commit or roll back the pending knowledge transaction before any workflow write.",
+    );
+    return { available, blocked };
+  }
 
   if (context.openBlockers.length > 0) {
     const firstBlocker = context.openBlockers[0];
@@ -661,9 +701,10 @@ export function deriveActions(
     addAvailable(availableAction("draft_knowledge_update"));
 
     if (!knowledgeConfirmed) {
+      addAvailable(availableAction("preview_knowledge"));
       if (
         context.selfChecks.knowledge.complete &&
-        state.knowledge_promotion.status === "ready" &&
+        context.knowledgePromotion.ready_for_confirmation &&
         context.materials.knowledge.digest !== null
       ) {
         const inputs = confirmationInputs(context, "knowledge");
@@ -679,21 +720,51 @@ export function deriveActions(
           ),
         );
       }
-    } else {
+    } else if (context.knowledgePromotion.ready_to_apply) {
       addAvailable(availableAction("apply_knowledge"));
+    } else {
+      addBlocked(
+        blockedAction(
+          "apply_knowledge",
+          "knowledge_preview_stale",
+          "ai_project_manager",
+          "Invalidate the knowledge gate, regenerate the preview, and reconfirm the exact patch.",
+        ),
+      );
+    }
+  }
+
+  if (state.phase === "archive_ready") {
+    addAvailable(availableAction("check_archive"));
+    if (context.archiveReadiness.ready) {
+      addAvailable(availableAction("archive"));
+    } else {
+      addBlocked(
+        blockedAction(
+          "archive",
+          context.archiveReadiness.unmet_conditions[0] ?? "archive_not_ready",
+          "ai_project_manager",
+          "Resolve every archive readiness condition reported by pm archive check.",
+        ),
+      );
     }
   }
 
   addApplicableInvalidations();
 
-  addBlocked(
-    blockedAction(
-      "archive",
-      "terminal_gates_not_satisfied",
-      "ai_project_manager",
-      "Complete implementation, acceptance, knowledge promotion, and archive checks.",
-    ),
-  );
+  if (
+    !available.some((action) => action.id === "archive") &&
+    !blocked.some((action) => action.id === "archive")
+  ) {
+    addBlocked(
+      blockedAction(
+        "archive",
+        "terminal_gates_not_satisfied",
+        "ai_project_manager",
+        "Complete implementation, acceptance, knowledge promotion, and archive checks.",
+      ),
+    );
+  }
 
   return { available, blocked };
 }

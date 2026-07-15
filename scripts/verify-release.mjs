@@ -152,6 +152,7 @@ try {
     "core/manifest.yaml",
     "core/schemas/project.schema.json",
     "core/schemas/change.schema.json",
+    "core/schemas/knowledge-patch.schema.json",
   ]) {
     assert.equal(releaseFiles.includes(required), true, "dist is missing " + required);
   }

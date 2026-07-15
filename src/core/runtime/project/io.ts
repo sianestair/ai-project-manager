@@ -59,11 +59,15 @@ export async function writeTextExclusive(path: string, content: string): Promise
 }
 
 export async function writeYamlAtomic(path: string, value: unknown): Promise<void> {
+  await writeTextAtomic(path, stringifyYaml(value));
+}
+
+export async function writeTextAtomic(path: string, content: string): Promise<void> {
   const temporaryPath = path + ".pm-tmp-" + randomUUID();
   await mkdir(dirname(path), { recursive: true });
 
   try {
-    await writeFile(temporaryPath, stringifyYaml(value), {
+    await writeFile(temporaryPath, content, {
       encoding: "utf8",
       flag: "wx",
     });
