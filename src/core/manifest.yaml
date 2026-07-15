@@ -17,4 +17,7 @@ schemas:
 skills:
   - id: ai-project-manager
     entry: core/skills/ai-project-manager/SKILL.md
-adapters: []
+adapters:
+  - id: codex
+    entry: adapters/codex/.agents/plugins/marketplace.json
+    plugin: adapters/codex/plugins/ai-project-manager/.codex-plugin/plugin.json

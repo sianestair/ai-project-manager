@@ -4,19 +4,7 @@ import { dirname } from "node:path";
 import { defineConfig } from "vite-plus";
 import { parse } from "yaml";
 
-interface CoreManifest {
-  core: {
-    id: string;
-    version: string;
-  };
-  runtime: {
-    engine_range: string;
-    cli: {
-      command: string;
-      entry: string;
-    };
-  };
-}
+import { projectCodexAdapter, type CoreManifest } from "./src/adapters/codex/build.js";
 
 async function pathExists(path: string): Promise<boolean> {
   try {
@@ -47,7 +35,9 @@ function readCoreManifest(value: unknown): CoreManifest {
     typeof manifest.core.version !== "string" ||
     typeof manifest.runtime.engine_range !== "string" ||
     manifest.runtime.cli.command !== "pm" ||
-    manifest.runtime.cli.entry !== "bin/pm.js"
+    manifest.runtime.cli.entry !== "bin/pm.js" ||
+    !Array.isArray(manifest.skills) ||
+    !Array.isArray(manifest.adapters)
   ) {
     throw new Error("src/core/manifest.yaml has invalid release metadata.");
   }
@@ -64,6 +54,7 @@ async function writeReleaseAssets(): Promise<void> {
   await writeFile("dist/core/manifest.yaml", manifestText, "utf8");
   await copyTree("src/core/schemas", "dist/core/schemas");
   await copyTree("src/core/skills", "dist/core/skills");
+  await projectCodexAdapter(manifest, "dist/adapters/codex");
 
   const releasePackage = {
     name: manifest.core.id,

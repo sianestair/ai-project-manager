@@ -9,7 +9,7 @@ Agent 支持依据：[agent-support-research.md](agent-support-research.md)
 方法调研依据：[agentic-development-frameworks-research.md](agentic-development-frameworks-research.md)
 第一阶段目标平台：Codex
 
-实施进度：Slice 1（I-01～I-06）、Slice 2（I-07～I-09）、Slice 3（I-10～I-12）、Slice 4（I-13～I-15）和 Slice 5（I-16～I-18）均已完成并验证；Slice 6 的 I-19 通用 `ai-project-manager` Skill 已完成并验证。Vite+、`src/`、单一自包含 `dist/`、CAC 命令目录、确认材料 digest、readiness、blocker/review、回退恢复、固定 Markdown 契约、任务依赖图、四维证据 readiness、知识三方 digest、可恢复原子应用、归档终态和 Agent 无关操作协议已形成可运行基线；下一任务为 I-20 Codex 适配器与单源投影。
+实施进度：Slice 1（I-01～I-06）、Slice 2（I-07～I-09）、Slice 3（I-10～I-12）、Slice 4（I-13～I-15）和 Slice 5（I-16～I-18）均已完成并验证；Slice 6 的 I-19 通用 `ai-project-manager` Skill 与 I-20 Codex 适配器/单源投影已完成并验证。Vite+、`src/`、单一自包含 `dist/`、CAC 命令目录、确认材料 digest、readiness、blocker/review、回退恢复、固定 Markdown 契约、任务依赖图、四维证据 readiness、知识三方 digest、可恢复原子应用、归档终态、Agent 无关操作协议与 Codex 标准插件安装资产已形成可运行基线；下一任务为 I-21 自动化公共 E2E 与真实 Codex 项目验收。
 
 ## 1. 计划目标与不可变边界
 
@@ -198,10 +198,12 @@ src/
         ...
   adapters/
     codex/
-      templates/
-        ...
+      INSTALL.md
       capability-map.md
       build.ts
+      templates/
+        plugin.json
+        marketplace.json
 tests/
   unit/
   integration/
@@ -230,7 +232,12 @@ dist/
         SKILL.md
   adapters/
     codex/
-      ... 由核心资产与 Codex 模板生成的安装材料
+      INSTALL.md
+      capability-map.md
+      .agents/plugins/marketplace.json
+      plugins/ai-project-manager/
+        .codex-plugin/plugin.json
+        skills/ai-project-manager/SKILL.md
 ~~~
 
 第一版仍是一个发布单元。`src/core/` 与 `src/adapters/codex/` 表达职责和依赖边界，不代表建立多个 npm package、多个 Skill、多个产品或多个运行服务；构建后的核心与 Codex 适配器共同进入同一个 `dist/`。
@@ -588,6 +595,8 @@ pm init
 - **依据**：[requirements.md](requirements.md) R1、R2、R4、R6、R7、R9～R11；[architecture.md](architecture.md) §9.1、§10.2；[agent-support-research.md](agent-support-research.md) §4.2、§5；[agentic-development-frameworks-research.md](agentic-development-frameworks-research.md) I-02～I-06。
 
 #### I-20 Codex 适配器与单源投影
+
+**实施状态**：已完成；已按实现时重新获取的 Codex 官方手册生成 `.codex-plugin/plugin.json`、本地 marketplace、安装入口和 capability map。构建只从 core manifest 与核心 Skill 投影，源码适配器不存在第二份 `SKILL.md`；官方 plugin validator、临时全新 marketplace 发现、发布内容与离线 tarball 测试已通过。真实 Codex 交互验收仍属于 I-21。
 
 - **目标**：从 core manifest 和通用 Skill 生成 Codex 安装资产、稳定入口和能力映射，不复制核心流程正文。
 - **Consumes**：核心 bundle、`src/core/manifest.yaml`、通用 Skill、实现时重新核对的 Codex 官方文档。

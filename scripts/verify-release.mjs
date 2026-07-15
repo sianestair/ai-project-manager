@@ -38,6 +38,10 @@ function run(command, args, cwd, environment = {}) {
   return result;
 }
 
+function comparePaths(left, right) {
+  return left < right ? -1 : left > right ? 1 : 0;
+}
+
 async function collectFiles(root, directory = root) {
   const entries = await readdir(directory, { withFileTypes: true });
   const files = [];
@@ -154,6 +158,11 @@ try {
     "core/schemas/change.schema.json",
     "core/schemas/knowledge-patch.schema.json",
     "core/skills/ai-project-manager/SKILL.md",
+    "adapters/codex/.agents/plugins/marketplace.json",
+    "adapters/codex/plugins/ai-project-manager/.codex-plugin/plugin.json",
+    "adapters/codex/plugins/ai-project-manager/skills/ai-project-manager/SKILL.md",
+    "adapters/codex/INSTALL.md",
+    "adapters/codex/capability-map.md",
   ]) {
     assert.equal(releaseFiles.includes(required), true, "dist is missing " + required);
   }
@@ -176,6 +185,51 @@ try {
   assert.deepEqual(releasePackage.bin, { pm: "bin/pm.js" });
   assert.equal("dependencies" in releasePackage, false);
   assert.equal("devDependencies" in releasePackage, false);
+
+  const pluginManifest = JSON.parse(
+    await readFile(
+      join(
+        distRoot,
+        "adapters",
+        "codex",
+        "plugins",
+        "ai-project-manager",
+        ".codex-plugin",
+        "plugin.json",
+      ),
+      "utf8",
+    ),
+  );
+  assert.equal(pluginManifest.name, releasePackage.name);
+  assert.equal(pluginManifest.version, releasePackage.version);
+  assert.equal(pluginManifest.skills, "./skills/");
+  const coreSkill = await readFile(
+    join(distRoot, "core", "skills", "ai-project-manager", "SKILL.md"),
+    "utf8",
+  );
+  const projectedSkill = await readFile(
+    join(
+      distRoot,
+      "adapters",
+      "codex",
+      "plugins",
+      "ai-project-manager",
+      "skills",
+      "ai-project-manager",
+      "SKILL.md",
+    ),
+    "utf8",
+  );
+  assert.equal(projectedSkill, coreSkill);
+  const marketplace = JSON.parse(
+    await readFile(
+      join(distRoot, "adapters", "codex", ".agents", "plugins", "marketplace.json"),
+      "utf8",
+    ),
+  );
+  assert.equal(marketplace.plugins.length, 1);
+  assert.equal(marketplace.plugins[0].name, releasePackage.name);
+  assert.equal(marketplace.plugins[0].source.path, "./plugins/ai-project-manager");
 
   const bundle = await readFile(join(distRoot, "bin", "pm.js"), "utf8");
   assert.match(bundle, /^#!\/usr\/bin\/env node/u);
@@ -203,8 +257,8 @@ try {
   const packResult = JSON.parse(packed.stdout);
   assert.equal(Array.isArray(packResult), true);
   assert.equal(packResult.length, 1);
-  const packedFiles = packResult[0].files.map((entry) => entry.path).sort();
-  assert.deepEqual(packedFiles, releaseFiles);
+  const packedFiles = packResult[0].files.map((entry) => entry.path).sort(comparePaths);
+  assert.deepEqual(packedFiles, [...releaseFiles].sort(comparePaths));
 
   const installRoot = join(temporaryRoot, "offline-install");
   await mkdir(installRoot, { recursive: true });

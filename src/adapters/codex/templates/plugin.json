@@ -1,0 +1,21 @@
+{
+  "name": "ai-project-manager",
+  "version": "0.0.0",
+  "description": "Distribute the portable, file-backed AI project manager workflow to Codex.",
+  "author": {
+    "name": "AI Project Manager contributors"
+  },
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "AI Project Manager",
+    "shortDescription": "Manage governed project changes from intent to archive",
+    "longDescription": "Use one project-manager workflow to organize requirements, design, implementation, acceptance, knowledge promotion, recovery, and archive through durable project files and the bundled pm CLI.",
+    "developerName": "AI Project Manager contributors",
+    "category": "Productivity",
+    "capabilities": ["Read", "Write"],
+    "defaultPrompt": [
+      "Manage this project change from intent to archive.",
+      "Resume the active project Change from file-backed state."
+    ]
+  }
+}

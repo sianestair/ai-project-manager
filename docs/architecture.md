@@ -755,8 +755,12 @@ src/
 │        └─ invalidate.ts
 └─ adapters/
    └─ codex/
-      ├─ ... Plugin Manifest 与安装材料
-      └─ ... Codex 端到端测试
+      ├─ build.ts
+      ├─ INSTALL.md
+      ├─ capability-map.md
+      └─ templates/
+         ├─ plugin.json
+         └─ marketplace.json
 ```
 
 Claude Code 等后续适配器只能增加适配层，不能复制或修改一套独立核心语义。
@@ -778,7 +782,12 @@ dist/
 │  └─ skills/
 └─ adapters/
    └─ codex/
-      └─ ... 由核心资产与 Codex 模板生成的安装材料
+      ├─ INSTALL.md
+      ├─ capability-map.md
+      ├─ .agents/plugins/marketplace.json
+      └─ plugins/ai-project-manager/
+         ├─ .codex-plugin/plugin.json
+         └─ skills/ai-project-manager/SKILL.md
 ```
 
 Codex 适配器与核心共同发布在一个 `dist/` 中，但源码依赖方向不变：`src/adapters/codex/` 可以消费核心公共资产，`src/core/` 不得导入适配器。单一发布单元不把适配器变成第二套状态语义，也不把它定义为独立产品。
