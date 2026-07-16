@@ -9,7 +9,7 @@ Agent 支持依据：[agent-support-research.md](agent-support-research.md)
 方法调研依据：[agentic-development-frameworks-research.md](agentic-development-frameworks-research.md)
 第一阶段目标平台：Codex
 
-实施进度：Slice 1（I-01～I-06）、Slice 2（I-07～I-09）、Slice 3（I-10～I-12）、Slice 4（I-13～I-15）和 Slice 5（I-16～I-18）均已完成并验证；Slice 6 的 I-19 通用 `ai-project-manager` Skill、I-20 Codex 适配器/单源投影和 I-21 自动化公共 E2E 已完成并验证。Vite+、`src/`、单一自包含 `dist/`、CAC 命令目录、确认材料 digest、readiness、blocker/review、回退恢复、固定 Markdown 契约、任务依赖图、四维证据 readiness、知识三方 digest、可恢复原子应用、归档终态、Agent 无关操作协议、Codex 标准插件安装资产与“连接钱包登录”自动闭环已形成可运行基线。I-21 真实执行已由用户选定 `D:\软件项目\vow-up`，完成项目接入、原始 Change、依赖 digest、结构化 blocker、提交后恢复和 expected-failure 验证；当前停在用户需求与知识权威决策门，四类确认和后续真实闭环仍不能由仓库夹具或自动测试替代。
+实施进度：Slice 1（I-01～I-06）、Slice 2（I-07～I-09）、Slice 3（I-10～I-12）、Slice 4（I-13～I-15）和 Slice 5（I-16～I-18）均已完成并验证；Slice 6 的 I-19 通用 `ai-project-manager` Skill、I-20 Codex 适配器/单源投影和 I-21 自动化公共 E2E 已完成并验证。Vite+、`src/`、单一自包含 `dist/`、CAC 命令目录、确认材料 digest、readiness、blocker/review、回退恢复、固定 Markdown 契约、任务依赖图、四维证据 readiness、知识三方 digest、可恢复原子应用、归档终态、Agent 无关操作协议、Codex 标准插件安装资产与“连接钱包登录”自动闭环已形成可运行基线。I-21 真实执行已由用户选定 `D:\软件项目\vow-up`，完成项目接入、原始 Change、依赖 digest、结构化 blocker 与解决、需求收敛、自检、提交后恢复和 expected-failure 验证；当前等待用户确认完整 requirements material set，四类确认和后续真实闭环仍不能由仓库夹具或自动测试替代。
 
 ## 1. 计划目标与不可变边界
 
@@ -608,7 +608,7 @@ pm init
 
 #### I-21 自动化公共 E2E 与“连接钱包登录”真实验收
 
-**实施状态**：自动化公共 E2E 已完成；发布 CLI 已覆盖原始意图不自动确认、需求/重大设计确认、设计确认前中断恢复、局部实现回退、实施中断恢复、四维验证、验收、知识三目标原子应用、归档和新 Change 状态权威边界。真实 Codex 项目验收已在用户指定的 `D:\软件项目\vow-up` 启动：目标接入与真实 requirements Change 已提交推送，提交后状态可恢复且 schema/依赖/expected-failure 门验证通过；当前由产品入口、登录语义、既有 Change 关系和知识权威路径四项用户决策阻塞。需求/设计/验收/知识确认仍必须由用户明确完成，执行与证据见 [codex-acceptance.md](codex-acceptance.md)。
+**实施状态**：自动化公共 E2E 已完成；发布 CLI 已覆盖原始意图不自动确认、需求/重大设计确认、设计确认前中断恢复、局部实现回退、实施中断恢复、四维验证、验收、知识三目标原子应用、归档和新 Change 状态权威边界。真实 Codex 项目验收已在用户指定的 `D:\软件项目\vow-up` 启动：目标接入与真实 requirements Change 已提交推送，四项长期决定已由用户确认，两个结构化 blocker 已解决，需求自检、追溯、schema、依赖和提交后恢复验证通过；当前等待用户确认 digest 绑定的完整需求材料。需求/设计/验收/知识确认仍必须由用户明确完成，执行与证据见 [codex-acceptance.md](codex-acceptance.md)。
 
 - **目标**：先用夹具自动走完整状态闭环，再在 Codex 中对一个真实项目从“实现连接钱包登录”意图完成两次中断、回退、验收、知识应用和归档。
 - **Consumes**：打包后的 CLI、Codex 适配器、通用 Skill、真实目标项目、用户在流程中的确认。

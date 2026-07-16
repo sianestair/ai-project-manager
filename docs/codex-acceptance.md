@@ -1,8 +1,8 @@
 # Codex 第一版真实项目验收
 
-状态：真实项目执行中（需求决策阻塞）
+状态：真实项目执行中（待需求材料确认）
 
-阶段：需求整理与用户决策
+阶段：需求确认门
 
 - 实施计划：[implementation-plan.md](implementation-plan.md) I-21
 - 需求基线：[requirements.md](requirements.md) 第一版成功标准 1～11
@@ -30,15 +30,17 @@
 | 运行时发布基线 | `my-workflow@2346c35773d54dc91780c26a275b49c5c808d39f` 的 `dist/bin/pm.js` |
 | 目标开始 revision | `6a2766416908b347d2b48405d37131af09fe0a07` |
 | 目标接入 revision | `6613293882bed994193ec5f0de004365436ae612`，已推送到 `origin/main` |
+| 需求收敛 revision | `35ac2fecedd3dcac4557110d189ce98265e5fe70`，已推送到 `origin/main` |
 | 真实 Change | `changes/active/2026-07-16-wallet-login/` |
-| 当前规范状态 | `phase=requirements`、`status=blocked`、requirements gate 未确认、需求自检未完成、唯一 available action 为用户 `resolve_blocker` |
+| 当前规范状态 | `phase=requirements`、`status=active`、无 open blocker、需求自检与 `REQ/AC` 追溯通过、requirements gate 未确认，下一动作是 `request_requirements_confirmation` |
+| 当前需求摘要 | material digest `79a3e0746fc3551e966e0530f4999a3521e58e97f7b1f869b3f0bc48c9f2c6a2`；用户已选择 Web Console、签名认证会话、既有 Web DApp Change 先归档、独立知识治理迁移 |
 | 依赖恢复 | 3 个 knowledge 与 4 个 engineering dependency digest 均为 `current`；提交后工作区无变更，`pm validate.valid=true`，无 error/warning |
-| 当前 blocker | 产品入口、登录语义、与既有 Web DApp Change 的关系，以及 VowUp 当前知识权威路径与第一版固定知识应用路径的兼容方案 |
+| 当前等待 | 用户确认当前完整 requirements material set；四项长期决定回复只解决范围 blocker，不自动替代该摘要确认 |
 | 尚未满足 | 四类用户确认、两次规定中断、真实实现与验证、知识原子应用、归档、新 Change 权威检查、Codex 插件真实安装与唯一 Skill 发现 |
 
 目标项目采用既有 `knowledge-base/project/` 当前真相权威和 legacy Change 工件。接入只增加 `PROJECT.yaml`，并明确含 `change.yaml` 的新式 Change 与既有 Change 双轨共存；没有运行 `pm init` 覆盖现有 `AGENTS.md`、知识规则或 legacy 工件。
 
-本次已经证明真实目标选择、原始意图捕获、依赖摘要、规范 blocker、提交后恢复和 expected-failure 门可以工作；它尚未满足 I-21 或 M6 完成门。
+本次已经证明真实目标选择、原始意图捕获、依赖摘要、规范 blocker 与解决、需求自检、提交后恢复和 expected-failure 门可以工作；它尚未满足 I-21 或 M6 完成门。
 
 ## 3. 执行前提
 
